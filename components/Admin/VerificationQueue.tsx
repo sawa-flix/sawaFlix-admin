@@ -155,7 +155,22 @@ export default function VerificationQueue() {
         const itemCat = (item.category || "").trim().toLowerCase();
         const filterCat = filterCategory.trim().toLowerCase();
         
-        return matchesSearch && itemCat === filterCat;
+        // Exact match check
+        if (itemCat === filterCat) return matchesSearch;
+        
+        // Fuzzy/Keyword match check (Fixes 'Film' vs 'Actor/Filmmaker', 'Music' vs 'Music Artist', etc.)
+        const categoryAliases: Record<string, string[]> = {
+            "Actor/Filmmaker": ["film", "movie", "actor", "filmmaker"],
+            "Music Artist": ["music", "musician", "artist", "singer"],
+            "Comedian": ["comedy", "comedian"],
+            "Traditional Storyteller": ["traditional", "story", "storyteller"],
+            "Food & Lifestyle": ["food", "lifestyle", "chef"]
+        };
+
+        const aliases = categoryAliases[filterCategory] || [filterCat];
+        const hasAliasMatch = aliases.some(alias => itemCat.includes(alias) || alias.includes(itemCat));
+        
+        return matchesSearch && hasAliasMatch;
     });
 
     const isPendingView = currentStatus === 'pending';

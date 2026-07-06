@@ -138,8 +138,8 @@ export default function VerificationAnalytics() {
     {
       title: "Total Processed",
       value: getVal(
-        stats?.queueStats?.completed ?? stats?.completed_count ?? (stats as any)?.analytics?.totalProcessed,
-        stats?.approved
+        (stats as any)?.analytics?.totalProcessed ?? stats?.queueStats?.completed ?? stats?.completed_count,
+        (stats?.approved || 0) + (stats?.rejected || 0)
       ).toString(),
       subtext: "Since platform launch",
       icon: <Users size={24} className="text-blue-500" />,
