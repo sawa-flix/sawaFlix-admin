@@ -156,12 +156,6 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
         </div>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm flex items-start space-x-2">
-          <AlertCircle className="shrink-0 mt-0.5" size={16} />
-          <span>{error}</span>
-        </div>
-      )}
 
       {success && (
         <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl text-sm flex items-start space-x-2">
