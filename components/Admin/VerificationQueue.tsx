@@ -17,7 +17,7 @@ import {
 import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { createClient } from '@/utils/supabase/client';
 
-const LIVEURL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sawaflix-backend.onrender.com';
+const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
 const supabase = createClient();
 
 interface VerificationItem {

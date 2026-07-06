@@ -32,7 +32,7 @@ interface Creator {
     avatar_url?: string;
 }
 
-const LIVEURL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sawaflix-backend.onrender.com';
+const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
 const LIMIT_PER_PAGE = 10;
 const supabase = createClient();
 

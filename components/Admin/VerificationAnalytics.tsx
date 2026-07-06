@@ -11,7 +11,7 @@ interface StatsData {
   avgTimeHours: string;
   rejectionsByCategory: Record<string, number>;
 }
-const LIVEURL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sawaflix-backend.onrender.com';
+const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
 export default function VerificationAnalytics() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
