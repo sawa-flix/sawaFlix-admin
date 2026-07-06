@@ -111,7 +111,7 @@ export default function VerificationDetails({ id }: { id: string }) {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const res = await fetch(`${LIVEURL}/api/admin/verifications/${id}`);
+                const res = await fetch(`${LIVEURL}/api/admin/verifications/{slug}${id}`);
                 if (!res.ok) throw new Error('Failed to fetch verification details');
                 const result = await res.json();
                 setData(result.data);
@@ -137,8 +137,8 @@ export default function VerificationDetails({ id }: { id: string }) {
         // Map action type to the correct Render API endpoint
         const endpointMap: Record<string, string> = {
             approve: `${LIVEURL}/api/admin/verifications/${id}/approve`,
-            reject:  `${LIVEURL}/api/admin/verifications/${id}/reject`,
-            info:    `${LIVEURL}/api/admin/verifications/${id}/reject`, // info_requested uses reject route with a flag
+            reject: `${LIVEURL}/api/admin/verifications/${id}/reject`,
+            info: `${LIVEURL}/api/admin/verifications/${id}/reject`, // info_requested uses reject route with a flag
         };
 
         try {

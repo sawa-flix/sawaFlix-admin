@@ -1,29 +1,24 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
-import Navbar from "@/components/Navbar";
-import Hero from "@/components/Hero";
-import GenreSection from "@/components/GenreSection";
-import MoviesSection from "@/components/MoviesSection";
-import TraditionalSection from "@/components/TraditionalSection";
-import LivingTraditions from "@/components/LivingTraditions";
-import AISection from "@/components/AISection";
-import FestivalBanner from "@/components/FestivalBanner";
-import Footer from "@/components/Footer";
+import Loader2  from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/admin");
+  }, [router]);
+
   return (
-    <main className="min-h-screen bg-[#0B0E14] text-white overflow-hidden">
-      <Navbar />
-      <Hero />
-      <GenreSection />
-      <MoviesSection />
-      <TraditionalSection />
-      <LivingTraditions />
-      <AISection />
-      <FestivalBanner />
-      <Footer />
-    </main>
+    <div className="min-h-screen bg-[#0B0E14] flex items-center justify-center">
+      <div className="flex flex-col items-center gap-4 text-white">
+        <div className="animate-spin text-red-600">
+          {/* Loading state while redirecting */}
+          <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full" />
+        </div>
+        <p className="text-gray-400 font-medium">Redirecting to Admin Portal...</p>
+      </div>
+    </div>
   );
 }

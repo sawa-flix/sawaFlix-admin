@@ -1,7 +1,11 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 
-const SawaflixLogo = ({ className = "" }) => {
+interface SawaflixLogoProps {
+    className?: string;
+}
+
+const SawaflixLogo: React.FC<SawaflixLogoProps> = ({ className = "" }) => {
     return (
         <div className={`flex items-center gap-2.5 group transition-all ${className}`}>
             <div className="w-8 h-8 sm:w-9 sm:h-9 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/20 group-hover:scale-105 transition-all">
