@@ -55,11 +55,30 @@ export default function VerificationQueue() {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+    const [pendingCount, setPendingCount] = useState<number>(0);
 
     const { addNotification } = useAdminNotifications();
 
+    const fetchPendingCount = async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+            const res = await fetch(`${LIVEURL}/api/admin/pending-count`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPendingCount(data.count ?? data.data?.count ?? 0);
+            }
+        } catch (e) {
+            console.error("Failed to fetch pending count", e);
+        }
+    };
+
     const fetchData = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
+        // Also refresh pending count in background
+        fetchPendingCount();
         try {
             const { data: { session } } = await supabase.auth.getSession();
             
@@ -104,6 +123,11 @@ export default function VerificationQueue() {
             }
 
             setItems(fetchedItems);
+            console.log("Verification Data Diagnostic:");
+            console.table(fetchedItems.length > 0 ? Object.keys(fetchedItems[0]) : []);
+            if (fetchedItems.length > 0) {
+                console.log("Sample Item:", fetchedItems[0]);
+            }
         } catch (error) {
             console.error("Failed to fetch verifications:", error);
         } finally {
@@ -114,7 +138,7 @@ export default function VerificationQueue() {
     useEffect(() => {
         fetchData();
 
-        // Auto-poll for new submissions every 30 seconds
+        // Auto-poll for new submissions and counts every 30 seconds
         const pollInterval = setInterval(() => {
             fetchData(true);
         }, 30000);
@@ -269,7 +293,7 @@ export default function VerificationQueue() {
                                     <div className="p-1">
                                         {[
                                             { value: 'all', label: 'All Status', icon: <Filter size={14} /> },
-                                            { value: 'pending', label: 'Pending', icon: <Clock size={14} /> },
+                                            { value: 'pending', label: 'Pending', icon: <Clock size={14} />, badge: pendingCount },
                                             { value: 'approved', label: 'Approved', icon: <CheckCircle2 size={14} className="text-green-500" /> },
                                             { value: 'rejected', label: 'Rejected', icon: <XCircle size={14} className="text-red-500" /> },
                                             { value: 'info_requested', label: 'Info Requested', icon: <Inbox size={14} /> }
@@ -290,6 +314,11 @@ export default function VerificationQueue() {
                                                 <div className="flex items-center gap-2">
                                                     {opt.icon}
                                                     {opt.label}
+                                                    {opt.badge !== undefined && opt.badge > 0 && (
+                                                        <span className="ml-1 px-1.5 py-0.5 bg-red-600 text-[10px] text-white rounded-full">
+                                                            {opt.badge}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {currentStatus === opt.value && <CheckCircle size={14} />}
                                             </button>
@@ -381,6 +410,8 @@ export default function VerificationQueue() {
                                 {!loading && filteredItems.length > 0 && filteredItems.map((item) => {
                                     const isPending = item.status === 'pending';
                                     const isSelected = selectedIds.has(item.id);
+                                    const resolvedName = item.legal_name || item.stage_name || item.full_name || item.identity?.legalName || "Unknown Creator";
+
                                     return (
                                         <tr key={item.id} className={`group transition-colors ${isSelected ? 'bg-red-500/5' : 'hover:bg-gray-800/50'}`}>
                                             <td className="px-6 py-4" onClick={(e) => { e.stopPropagation(); toggleSelect(item.slug || item.id, isPending); }}>
@@ -396,24 +427,19 @@ export default function VerificationQueue() {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 cursor-pointer" onClick={() => toggleSelect(item.id, isPending)}>
-                                                {(() => {
-                                                    const resolvedName = item.legal_name || item.stage_name || item.full_name || item.identity?.legalName || "Unknown Creator";
-                                                    return (
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden relative border border-gray-700">
-                                                                <img
-                                                                    src={item.avatar_url || item.identity?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}`}
-                                                                    alt={resolvedName}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            </div>
-                                                            <div>
-                                                                <div className="font-medium text-white">{resolvedName}</div>
-                                                                <div className="text-xs text-gray-500">ID: #{item.id.substring(0, 8)}</div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()}
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden relative border border-gray-700">
+                                                        <img
+                                                            src={item.avatar_url || item.identity?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}`}
+                                                            alt={resolvedName}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-medium text-white">{resolvedName}</div>
+                                                        <div className="text-xs text-gray-500">ID: #{item.id.substring(0, 8)}</div>
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-300 bg-gray-800 px-2 py-1 rounded border border-gray-700">
@@ -436,7 +462,7 @@ export default function VerificationQueue() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <Link
-                                                    href={`/admin/verifications/${item.slug || item.id}`}
+                                                    href={`/admin/verifications/${item.id}?name=${encodeURIComponent(resolvedName)}&category=${encodeURIComponent(item.category)}`}
                                                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-red-900/20"
                                                 >
                                                     <Eye size={16} />

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
     ArrowLeft,
     CheckCircle,
@@ -80,6 +80,7 @@ const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
 const supabase = createClient();
 export default function VerificationDetails({ id }: { id: string }) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [data, setData] = useState<VerificationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -115,33 +116,43 @@ export default function VerificationDetails({ id }: { id: string }) {
             setError('');
             try {
                 const { data: { session } } = await supabase.auth.getSession();
-                const res = await fetch(`${LIVEURL}/api/admin/verifications/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${session?.access_token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const headers = {
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                // Strategy 1: Path parameter (Standard)
+                console.log(`[Strategy 1] Fetching by Path: ${LIVEURL}/api/admin/verifications/${id}`);
+                let res = await fetch(`${LIVEURL}/api/admin/verifications/${id}`, { headers });
                 
-                console.log(`Fetching details for ID: ${id}, Status: ${res.status}`);
-                
+                // Strategy 2: Query parameter (Fallback for some backend versions)
+                if (res.status === 404) {
+                    console.warn(`[Strategy 2] Path param failed. Retrying with Query param: ${LIVEURL}/api/admin/verifications?id=${id}`);
+                    res = await fetch(`${LIVEURL}/api/admin/verifications?id=${id}`, { headers });
+                }
+
                 if (res.status === 401 || res.status === 403) {
                     router.push('/login?error=Access+denied.+This+portal+is+restricted+to+administrators+only.');
                     return;
                 }
                 
-                if (res.status === 404) {
-                    throw new Error(`Verification request not found (#${id}). Please verify the creator exists in the database.`);
-                }
-                
                 if (!res.ok) {
-                    throw new Error(`Server returned error: ${res.statusText}`);
+                    const status = res.status;
+                    const statusText = res.statusText;
+                    const url = res.url;
+                    throw new Error(`BACKEND_ERROR|${status}|${statusText}|${url}`);
                 }
                 
                 const result = await res.json();
                 setData(result.data);
             } catch (err: any) {
                 console.error('Fetch error:', err);
-                setError(err.message || 'Failed to load verification details. Please ensure the backend is running.');
+                if (err.message.startsWith('BACKEND_ERROR')) {
+                    const [_, status, text, url] = err.message.split('|');
+                    setError(`Backend returned ${status} (${text}) for ${url}. This is a backend configuration issue.`);
+                } else {
+                    setError(err.message || 'Failed to load verification details. Please ensure the backend is running.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -244,14 +255,42 @@ export default function VerificationDetails({ id }: { id: string }) {
     }
 
     if (error || !data) {
+        const fallbackName = searchParams.get('name') || "Unknown Creator";
+        const fallbackCategory = searchParams.get('category') || "Unknown Category";
+
+        const generateReport = () => {
+            const report = `FRONTEND DIAGNOSTIC REPORT\n--------------------------\nTarget ID: ${id}\nReported Error: ${error}\nTimestamp: ${new Date().toISOString()}\nBrowser: ${navigator.userAgent}\nSuggested Fix: Backend devs should ensure the [id] route supports searching by creator_id/submission_id.`;
+            navigator.clipboard.writeText(report);
+            setToast({ message: 'Diagnostic report copied to clipboard!', type: 'success' });
+        };
+
         return (
-            <div className="flex flex-col items-center justify-center h-[50vh] text-center px-4">
-                <XCircle size={48} className="text-red-500 mb-4" />
-                <h2 className="text-xl font-bold text-white mb-2">Error Loading Data</h2>
-                <p className="text-gray-400 mb-6">{error || 'Verification request not found.'}</p>
-                <Link href="/admin" className="px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-colors">
-                    Back to Queue
-                </Link>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 max-w-2xl mx-auto">
+                {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+                <div className="bg-red-500/10 p-4 rounded-full mb-6">
+                    <XCircle size={48} className="text-red-500" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Could Not Load Details</h2>
+                <p className="text-gray-400 mb-2">We couldn't retrieve the full profile for <strong>{fallbackName}</strong> ({fallbackCategory}).</p>
+                <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 text-left w-full mb-8">
+                    <div className="flex items-center gap-2 mb-2 text-red-400">
+                        <AlertCircle size={16} />
+                        <span className="text-sm font-bold uppercase tracking-wider">Backend Error Details</span>
+                    </div>
+                    <code className="text-xs text-gray-500 break-all">{error}</code>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                    <button 
+                        onClick={generateReport}
+                        className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all shadow-lg shadow-red-900/20 font-medium"
+                    >
+                        Generate Backend Report
+                    </button>
+                    <Link href="/admin" className="flex-1 px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-xl transition-colors font-medium">
+                        Back to Queue
+                    </Link>
+                </div>
             </div>
         );
     }
@@ -294,11 +333,11 @@ export default function VerificationDetails({ id }: { id: string }) {
 
                         <div className="flex justify-center mb-6">
                             <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-700 relative bg-gray-800 flex items-center justify-center">
-                                {data.identity.avatarUrl ? (
+                                {data?.identity?.avatarUrl ? (
                                     <img src={data.identity.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                                 ) : (
                                     <span className="text-white font-bold text-2xl">
-                                        {data.identity.legalName?.charAt(0)?.toUpperCase() || '?'}
+                                        {data?.identity?.legalName?.charAt(0)?.toUpperCase() || '?'}
                                     </span>
                                 )}
                             </div>
@@ -309,7 +348,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                                 <label className="text-xs text-gray-500 block">Name</label>
                                 <div className="text-white font-medium">{resolveName(data)}</div>
                             </div>
-                            {data.identity.phone && (
+                            {data?.identity?.phone && (
                                 <div>
                                     <label className="text-xs text-gray-500 block">Phone</label>
                                     <div className="text-gray-300">{data.identity.phone}</div>
@@ -318,11 +357,11 @@ export default function VerificationDetails({ id }: { id: string }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs text-gray-500 block">Date Of Birth</label>
-                                    <div className="text-gray-300">{data.identity.dob || 'May 3, 2000'}</div>
+                                    <div className="text-gray-300">{data?.identity?.dob || 'Not provided'}</div>
                                 </div>
                                 <div>
                                     <label className="text-xs text-gray-500 block">Location</label>
-                                    <div className="text-gray-300">{data.identity.location || data.identity.nationality || 'Not provided'}</div>
+                                    <div className="text-gray-300">{data?.identity?.location || data?.identity?.nationality || 'Not provided'}</div>
                                 </div>
                             </div>
                         </div>
@@ -338,26 +377,26 @@ export default function VerificationDetails({ id }: { id: string }) {
                             <div>
                                 <label className="text-xs text-gray-500 block">Category</label>
                                 <div className="inline-block mt-1 px-3 py-1 rounded-full bg-red-600/10 text-red-500 text-sm font-medium border border-red-600/20">
-                                    {data.professional.category}
+                                    {data?.professional?.category || 'General'}
                                 </div>
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 block">Bio</label>
-                                <div className="text-gray-300 text-sm mt-1 leading-relaxed">{data.professional.bio}</div>
+                                <div className="text-gray-300 text-sm mt-1 leading-relaxed">{data?.professional?.bio || 'No bio provided'}</div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs text-gray-500 block">Experience</label>
-                                    <div className="text-white font-medium">{data.professional.experience || data.professional.yearsActive}</div>
+                                    <div className="text-white font-medium">{data?.professional?.experience || data?.professional?.yearsActive || 'N/A'}</div>
                                 </div>
-                                {data.professional.label && (
+                                {data?.professional?.label && (
                                     <div>
                                         <label className="text-xs text-gray-500 block">Label / Affiliation</label>
                                         <div className="text-white font-medium">{data.professional.label}</div>
                                     </div>
                                 )}
                             </div>
-                            {data.professional.genre && (
+                            {data?.professional?.genre && data.professional.genre.length > 0 && (
                                 <div>
                                     <label className="text-xs text-gray-500 block">Genres</label>
                                     <div className="flex flex-wrap gap-2 mt-1">
@@ -380,7 +419,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                             Portfolio & Content
                         </h2>
 
-                        {data.portfolio.links.length > 0 && (
+                        {data?.portfolio?.links && data.portfolio.links.length > 0 && (
                             <div className="mb-6">
                                 <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Social & Streaming</h3>
                                 <div className="flex flex-wrap gap-3">
@@ -395,7 +434,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                             </div>
                         )}
 
-                        {data.portfolio.videos.length > 0 && (
+                        {data?.portfolio?.videos && data.portfolio.videos.length > 0 ? (
                             <div>
                                 <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wider">Submitted Videos</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -412,6 +451,8 @@ export default function VerificationDetails({ id }: { id: string }) {
                                     ))}
                                 </div>
                             </div>
+                        ) : (
+                            <p className="text-gray-500 text-sm">No portfolio items submitted.</p>
                         )}
                     </div>
 
@@ -423,7 +464,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                         </h2>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {data.documents.idCardUrl && (
+                            {data?.documents?.idCardUrl && (
                                 <div className="space-y-2">
                                     <label className="text-sm text-gray-400 font-medium">National ID / Passport</label>
                                     <div
@@ -437,7 +478,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                                 </div>
                             )}
 
-                            {data.documents.selfieUrl && (
+                            {data?.documents?.selfieUrl && (
                                 <div className="space-y-2">
                                     <label className="text-sm text-gray-400 font-medium">Selfie with ID</label>
                                     <div
@@ -451,7 +492,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                                 </div>
                             )}
 
-                            {Object.entries(data.documents).map(([key, url]) => {
+                            {data?.documents && Object.entries(data.documents).map(([key, url]) => {
                                 if (key === 'idCardUrl' || key === 'selfieUrl' || !url) return null;
                                 return (
                                     <div key={key} className="space-y-2">
@@ -486,7 +527,7 @@ export default function VerificationDetails({ id }: { id: string }) {
             <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-gray-900/95 backdrop-blur border-t border-gray-800 p-4 z-40">
                 <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
                     <p className="text-xs text-gray-500 hidden sm:block">
-                        {!isActionable ? `This submission is already ${data.status.replace('_', ' ')}.` : 'Choose an action to proceed.'}
+                        {!isActionable ? `This submission is already ${(data?.status || 'pending').replace('_', ' ')}.` : 'Choose an action to proceed.'}
                     </p>
                     <div className="flex gap-3 ml-auto">
                         <button
