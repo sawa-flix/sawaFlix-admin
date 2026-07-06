@@ -2,10 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  getTopArtists, 
   fetchOEmbed, 
-  saveAdminContent, 
-  TopArtist 
+  saveAdminContent
 } from '@/services/adminContentService';
 import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { 
@@ -35,7 +33,6 @@ const REGIONS = [
 
 export default function ContentUploadForm({ onSaved }: { onSaved?: () => void }) {
   // Form State
-  const [selectedArtistId, setSelectedArtistId] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'Music' | 'Video' | 'Comedy' | 'Documentary'>('Music');
@@ -43,8 +40,6 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
   const [region, setRegion] = useState('National');
 
   // UI / Logic State
-  const [topArtists, setTopArtists] = useState<TopArtist[]>([]);
-  const [artistsLoading, setArtistsLoading] = useState(true);
   const [oembedLoading, setOembedLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,21 +54,6 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
 
   const { addNotification } = useAdminNotifications();
 
-  // Load top active artists for selector dropdown
-  useEffect(() => {
-    async function loadArtists() {
-      try {
-        const list = await getTopArtists();
-        // Show only active artists in selection
-        setTopArtists(list.filter(item => item.is_active));
-      } catch (err: any) {
-        console.error("Failed to load curated artists list:", err);
-      } finally {
-        setArtistsLoading(false);
-      }
-    }
-    loadArtists();
-  }, []);
 
   // Validate YouTube URL format
   const getYouTubeId = (url: string) => {
@@ -113,10 +93,6 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
     setSuccess(false);
 
     // Validations
-    if (!selectedArtistId) {
-      setError('Please select an artist.');
-      return;
-    }
     if (!youtubeUrl || !getYouTubeId(youtubeUrl)) {
       setError('Please provide a valid YouTube URL.');
       return;
@@ -132,14 +108,13 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
 
     setSaving(true);
     try {
-      const selectedArtist = topArtists.find(a => a.artist_id === selectedArtistId)?.artist;
       
       await saveAdminContent({
-        artist_id: selectedArtistId,
+        artist_id: '', // Artist is automatically resolved via YouTube author name
         youtube_url: youtubeUrl,
         title: title,
         thumbnail_url: youtubePreview?.thumbnail_url || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&h=180&fit=crop',
-        author_name: selectedArtist?.name || youtubePreview?.author_name || 'Admin Curated',
+        author_name: youtubePreview?.author_name || 'Admin Curated',
         category,
         genre,
         region,
@@ -154,7 +129,6 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
       });
 
       // Clear Form on success
-      setSelectedArtistId('');
       setYoutubeUrl('');
       setTitle('');
       setGenre('');
@@ -196,39 +170,10 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
       )}
 
       <div className="space-y-6">
-        {/* 1. Artist Selector */}
+        {/* 1. YouTube URL input */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2">
-            1. Curated Artist <span className="text-red-500">*</span>
-          </label>
-          {artistsLoading ? (
-            <div className="flex items-center space-x-2 text-gray-500 text-sm">
-              <Loader2 className="animate-spin" size={16} />
-              <span>Loading top artists...</span>
-            </div>
-          ) : (
-            <select
-              value={selectedArtistId}
-              onChange={(e) => setSelectedArtistId(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 focus:border-red-500 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
-            >
-              <option value="">-- Choose Artist from Top 20 --</option>
-              {topArtists.map((ta) => (
-                <option key={ta.artist_id} value={ta.artist_id}>
-                  {ta.artist?.name} ({ta.artist?.region})
-                </option>
-              ))}
-            </select>
-          )}
-          <p className="text-xs text-gray-500 mt-1.5">
-            Only active curated artists from your Top 20 list are displayed. Manage them in the Top 20 tab.
-          </p>
-        </div>
-
-        {/* 2. YouTube URL input */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            2. YouTube URL <span className="text-red-500">*</span>
+            1. YouTube URL <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -269,10 +214,10 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
           </div>
         )}
 
-        {/* 3. Title Override */}
+        {/* 2. Title Override */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2">
-            3. Content Display Title <span className="text-red-500">*</span>
+            2. Content Display Title <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -283,7 +228,7 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
           />
         </div>
 
-        {/* 4. Categorization */}
+        {/* 3. Categorization */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-semibold text-gray-300 mb-2">
