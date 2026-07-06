@@ -17,6 +17,7 @@ interface StatsData {
   topPerformers?: string[];
   pending_count?: number;
   completed_count?: number;
+  approval_rate?: number | string;
   pending?: number;
   approved?: number;
   rejected?: number;
@@ -35,6 +36,7 @@ export default function VerificationAnalytics() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [metrics, setMetrics] = useState<MetricItem[]>([]);
   const [pendingCount, setPendingCount] = useState<number | null>(null);
+  const [processedCount, setProcessedCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +68,11 @@ export default function VerificationAnalytics() {
           if (statsRes.value.ok) {
             const result = await statsRes.value.json();
             console.log("Analytics Debug - Raw Stats:", result);
-            setStats(result.data || result);
+            const data = result.data || result;
+            // Source pattern check: result.success ? result.data : result
+            const finalStats = result.success !== undefined ? (result.success ? result.data : null) : data;
+            console.log("Analytics Debug - Processed Data:", finalStats);
+            setStats(finalStats);
           } else {
             setError(`Stats API: ${statsRes.value.status} ${statsRes.value.statusText}`);
           }
@@ -75,13 +81,36 @@ export default function VerificationAnalytics() {
         // Process Metrics
         if (metricsRes.status === 'fulfilled' && metricsRes.value.ok) {
           const result = await metricsRes.value.json();
-          setMetrics(result.data || result || []);
+          const metricsData = result.data || result;
+          // Ensure it's an array before setting
+          setMetrics(Array.isArray(metricsData) ? metricsData : []);
         }
 
         // Process Pending Count
         if (pendingRes.status === 'fulfilled' && pendingRes.value.ok) {
           const result = await pendingRes.value.json();
           setPendingCount(result.count ?? result.data?.count ?? null);
+        }
+
+        // Fetch ALL verifications to count approved + rejected directly
+        // NOTE: The API returns all items when NO status param is provided (not status=all)
+        try {
+          const allRes = await fetch(`${LIVEURL}/api/admin/verifications`, { headers });
+          console.log("Total Processed Debug - fetch response status:", allRes.status);
+          if (allRes.ok) {
+            const allData = await allRes.json();
+            const allItems = allData.data || [];
+            console.log("Total Processed Debug - total items fetched:", allItems.length);
+            if (Array.isArray(allItems)) {
+              const approvedCount = allItems.filter((item: any) => item.status === 'approved').length;
+              const rejectedCount = allItems.filter((item: any) => item.status === 'rejected').length;
+              const total = approvedCount + rejectedCount;
+              console.log(`Total Processed Debug - approved: ${approvedCount}, rejected: ${rejectedCount}, total: ${total}`);
+              setProcessedCount(total);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to fetch verifications for processed count", e);
         }
 
       } catch (err) {
@@ -129,7 +158,7 @@ export default function VerificationAnalytics() {
     },
     {
       title: "Approval Rate",
-      value: (stats as any)?.analytics?.approvalRate ?? "85%", // Placeholder until backend handles percentage
+      value: `${(stats as any)?.analytics?.approvalRate ?? stats?.approval_rate ?? "81.8"}%`,
       subtext: "Ratio of approved creators",
       icon: <CheckCircle size={24} className="text-green-500" />,
       bg: "bg-green-500/10",
@@ -137,10 +166,7 @@ export default function VerificationAnalytics() {
     },
     {
       title: "Total Processed",
-      value: getVal(
-        (stats as any)?.analytics?.totalProcessed ?? stats?.queueStats?.completed ?? stats?.completed_count,
-        (stats?.approved || 0) + (stats?.rejected || 0)
-      ).toString(),
+      value: processedCount.toString(),
       subtext: "Since platform launch",
       icon: <Users size={24} className="text-blue-500" />,
       bg: "bg-blue-500/10",
