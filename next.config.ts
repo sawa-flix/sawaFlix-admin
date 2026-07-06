@@ -9,7 +9,8 @@ const nextConfig = {
     },
   },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sawaflix-backend.onrender.com';
+    // Hardcode to the Render backend to prevent Vercel environment variable mismatches from breaking the API proxy (which causes 404s)
+    const backendUrl = 'https://sawaflix-backend.onrender.com';
     return [
       {
         source: '/api/:path*',
