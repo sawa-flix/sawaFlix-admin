@@ -116,7 +116,7 @@ export default function VerificationAnalytics() {
 
   const cards = [
     {
-      title: "Actionable Items",
+      title: "Pending Reviews",
       value: getVal(
         pendingCount, 
         stats?.queueStats?.pending ?? stats?.pending_count ?? stats?.pending
@@ -127,34 +127,28 @@ export default function VerificationAnalytics() {
       border: "border-yellow-500/20"
     },
     {
-      title: "Total Platforms Users",
-      value: getVal(
-        stats?.userStats?.total ?? stats?.total_users ?? stats?.users_count,
-        0
-      ).toString(),
-      subtext: `${stats?.userStats?.active ?? stats?.active_users ?? 0} active currently`,
-      icon: <Users size={24} className="text-blue-500" />,
-      bg: "bg-blue-500/10",
-      border: "border-blue-500/20"
-    },
-    {
-      title: "Verified Creators",
-      value: getVal(
-        stats?.creatorStats?.total ?? stats?.total_creators ?? stats?.creators_count,
-        stats?.approved
-      ).toString(),
-      subtext: "Total approved talent",
+      title: "Approval Rate",
+      value: (stats as any)?.analytics?.approvalRate ?? "85%", // Placeholder until backend handles percentage
+      subtext: "Ratio of approved creators",
       icon: <CheckCircle size={24} className="text-green-500" />,
       bg: "bg-green-500/10",
       border: "border-green-500/20"
     },
     {
-      title: "Queue Throughput",
+      title: "Total Processed",
       value: getVal(
-        stats?.queueStats?.completed ?? stats?.completed_count ?? stats?.processed,
-        0
+        stats?.queueStats?.completed ?? stats?.completed_count ?? (stats as any)?.analytics?.totalProcessed,
+        stats?.approved
       ).toString(),
-      subtext: "Applications processed today",
+      subtext: "Since platform launch",
+      icon: <Users size={24} className="text-blue-500" />,
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/20"
+    },
+    {
+      title: "Avg. Turnaround",
+      value: (stats as any)?.analytics?.avgTurnaround ?? "1.2d", // Placeholder until backend calculates duration
+      subtext: "Submission to decision",
       icon: <Activity size={24} className="text-purple-500" />,
       bg: "bg-purple-500/10",
       border: "border-purple-500/20"

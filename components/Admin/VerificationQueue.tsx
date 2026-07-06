@@ -38,7 +38,7 @@ interface VerificationItem {
 }
 
 const CATEGORIES = [
-    "All",
+    "All Requests",
     "Traditional Storyteller",
     "Food & Lifestyle",
     "Actor/Filmmaker",
@@ -49,7 +49,7 @@ const CATEGORIES = [
 export default function VerificationQueue() {
     const [items, setItems] = useState<VerificationItem[]>([]);
     const [currentStatus, setCurrentStatus] = useState<VerificationItem['status'] | 'all'>('pending');
-    const [filterCategory, setFilterCategory] = useState('All');
+    const [filterCategory, setFilterCategory] = useState('All Requests');
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -90,7 +90,7 @@ export default function VerificationQueue() {
             }
 
             const statusParam = currentStatus === 'all' ? '' : `status=${currentStatus}`;
-            const categoryParam = filterCategory === 'All' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
+            const categoryParam = filterCategory === 'All Requests' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
             const res = await fetch(`${LIVEURL}/api/admin/verifications?${statusParam}${categoryParam}`, {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
@@ -147,7 +147,7 @@ export default function VerificationQueue() {
     }, [currentStatus, filterCategory]); // Re-run effect when status or category changes
 
     const filteredItems = items.filter(item => {
-        const name = item.legal_name || item.stage_name || item.full_name || item.identity?.legalName || "Unknown Creator";
+        const name = item.stage_name || item.identity?.stageName || item.legal_name || item.full_name || item.identity?.legalName || "Unknown Creator";
         const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
@@ -354,7 +354,7 @@ export default function VerificationQueue() {
                             : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800 hover:cursor-pointer'
                             }`}
                     >
-                        {cat}
+                        {cat === 'All' ? 'All Requests' : cat}
                     </button>
                 ))}
             </div>
@@ -410,7 +410,7 @@ export default function VerificationQueue() {
                                 {!loading && filteredItems.length > 0 && filteredItems.map((item) => {
                                     const isPending = item.status === 'pending';
                                     const isSelected = selectedIds.has(item.id);
-                                    const resolvedName = item.legal_name || item.stage_name || item.full_name || item.identity?.legalName || "Unknown Creator";
+                                    const resolvedName = item.stage_name || item.identity?.stageName || item.legal_name || item.full_name || item.identity?.legalName || "Unknown Creator";
 
                                     return (
                                         <tr key={item.id} className={`group transition-colors ${isSelected ? 'bg-red-500/5' : 'hover:bg-gray-800/50'}`}>
@@ -437,7 +437,6 @@ export default function VerificationQueue() {
                                                     </div>
                                                     <div>
                                                         <div className="font-medium text-white">{resolvedName}</div>
-                                                        <div className="text-xs text-gray-500">ID: #{item.id.substring(0, 8)}</div>
                                                     </div>
                                                 </div>
                                             </td>

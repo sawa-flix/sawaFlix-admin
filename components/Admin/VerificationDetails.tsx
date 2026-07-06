@@ -163,7 +163,7 @@ export default function VerificationDetails({ id }: { id: string }) {
 
     const resolveName = (item: any) => {
         if (!item) return "Unknown Creator";
-        return item.legal_name || item.stage_name || item.full_name || (item.identity?.legalName) || "Unknown Creator";
+        return item.stage_name || item.identity?.stageName || item.legal_name || item.full_name || (item.identity?.legalName) || "Unknown Creator";
     };
 
     const handleAction = async (type: 'approve' | 'reject' | 'info') => {
@@ -295,7 +295,7 @@ export default function VerificationDetails({ id }: { id: string }) {
         );
     }
 
-    const resolvedName = (data as any)?.legal_name || (data as any)?.stage_name || (data as any)?.full_name || data?.identity?.legalName || "Unknown Creator";
+    const resolvedName = (data as any)?.stage_name || (data as any)?.identity?.stageName || (data as any)?.legal_name || (data as any)?.full_name || data?.identity?.legalName || "Unknown Creator";
     const currentStatus = statusConfig[data.status] ?? statusConfig.pending;
     const isActionable = data.status === 'pending' || data.status === 'info_requested';
 
@@ -311,7 +311,6 @@ export default function VerificationDetails({ id }: { id: string }) {
                 </Link>
                 <div>
                     <h1 className="text-2xl font-bold text-white">Verification Review</h1>
-                    <p className="text-gray-400 text-sm">Submission ID: #{id}</p>
                 </div>
                 <div className="ml-auto">
                     <span className={`px-3 py-1 rounded-full text-sm font-medium border ${currentStatus.className}`}>
