@@ -179,17 +179,25 @@ export default function VerificationDetails({ id }: { id: string }) {
                 return;
             }
 
-            // endpoints from screenshot: /api/admin/verifications/{slug}/approve (POST)
-            const endpoint = type === 'approve' ? 'approve' : type === 'reject' ? 'reject' : 'info';
-            const url = `${LIVEURL}/api/admin/verifications/${id}/${endpoint}`;
+            // Use the unified PUT /api/admin/verify endpoint on the Render backend
+            const statusMap: Record<string, string> = {
+                approve: 'approved',
+                reject: 'rejected',
+                info: 'info_requested',
+            };
+            const url = `${LIVEURL}/api/admin/verify`;
             
             const res = await fetch(url, {
-                method: 'POST',
+                method: 'PUT',
                 headers: { 
                     'Authorization': `Bearer ${session.access_token}`,
                     'Content-Type': 'application/json' 
                 },
-                body: JSON.stringify({ notes: feedback.trim() || (type === 'approve' ? 'Approved by admin' : `Action: ${type}`) })
+                body: JSON.stringify({
+                    target_creator_id: id,
+                    status: statusMap[type],
+                    notes: feedback.trim() || (type === 'approve' ? 'Approved by admin' : `Action: ${type}`)
+                })
             });
 
             if (!res.ok) {
