@@ -20,7 +20,7 @@ export interface TopArtist {
 
 export interface AdminContent {
   id: string;
-  artist_id: string;
+  artist_id?: string;
   youtube_url: string;
   title: string;
   thumbnail_url: string;
@@ -160,10 +160,23 @@ export async function saveAdminContent(content: Omit<AdminContent, 'id' | 'creat
     const headers = await getAuthHeaders();
     
     // The backend swagger screenshot showed POST /api/admin/content
-    const payload = {
+    // Extract video_id from youtube_url just in case the backend requires it
+    let video_id = '';
+    const match = content.youtube_url?.match(/[?&]v=([^&]+)/) || content.youtube_url?.match(/youtu\.be\/([^?]+)/);
+    if (match) {
+        video_id = match[1];
+    }
+
+    const payload: any = {
         ...content,
+        youtubeUrl: content.youtube_url, // Backend expects camelCase
+        video_id: video_id,
         source_type: 'admin'
     };
+    
+    if (!payload.artist_id) {
+        delete payload.artist_id;
+    }
 
     const res = await fetch(`${API_URL}/api/admin/content`, {
         method: 'POST',
@@ -172,7 +185,14 @@ export async function saveAdminContent(content: Omit<AdminContent, 'id' | 'creat
     });
 
     if (!res.ok) {
-        throw new Error(`Failed to save admin content (Status: ${res.status})`);
+        let errorMsg = `Status: ${res.status}`;
+        try {
+            const errData = await res.json();
+            errorMsg = errData.error || errData.message || JSON.stringify(errData);
+        } catch (e) {
+            // keep default generic message
+        }
+        throw new Error(`Failed to save admin content: ${errorMsg}`);
     }
 
     const data = await res.json();
