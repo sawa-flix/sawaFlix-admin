@@ -14,7 +14,8 @@ import {
   AlertCircle, 
   Loader2, 
   MapPin, 
-  Tags 
+  Tags,
+  Play
 } from 'lucide-react';
 
 const REGIONS = [
@@ -193,21 +194,37 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
           </div>
         </div>
 
-        {/* oEmbed Autofill Preview */}
+        {/* oEmbed Autofill Preview (Discord Style) */}
         {youtubePreview && (
-          <div className="p-4 bg-gray-950 rounded-xl border border-gray-800 flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-top-2">
-            <img 
-              src={youtubePreview.thumbnail_url} 
-              alt="Thumbnail" 
-              className="w-full sm:w-36 h-20 object-cover rounded-lg border border-gray-800 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <span className="text-[10px] uppercase font-bold text-red-500 bg-red-950/40 px-2 py-0.5 rounded border border-red-500/10 inline-flex items-center gap-1 mb-2">
-                <Sparkles size={10} /> Auto-fetched oEmbed
-              </span>
-              <h4 className="text-sm font-bold text-white truncate">{youtubePreview.title}</h4>
-              <p className="text-xs text-gray-400 mt-1">Channel: {youtubePreview.author_name}</p>
-            </div>
+          <div className="mt-4 rounded-xl overflow-hidden border border-gray-800 bg-[#1e1f22] max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+             <div className="p-4 border-l-[4px] border-l-[#ff0000] flex flex-col gap-3">
+               <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
+                 <Youtube size={16} className="text-[#ff0000]" />
+                 <span>YouTube</span>
+               </div>
+               
+               <div>
+                 <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-[#00a8fc] hover:underline font-bold text-base block mb-1">
+                   {youtubePreview.title}
+                 </a>
+                 <p className="text-xs text-gray-300">
+                   {youtubePreview.author_name}
+                 </p>
+               </div>
+               
+               <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="relative group cursor-pointer w-full max-w-sm rounded-lg overflow-hidden border border-gray-800 mt-2 block">
+                 <img 
+                   src={youtubePreview.thumbnail_url} 
+                   alt="Thumbnail" 
+                   className="w-full h-auto aspect-video object-cover transition-transform duration-500 group-hover:scale-105"
+                 />
+                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="w-14 h-14 bg-[#ff0000] rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
+                      <Play className="text-white ml-1 w-6 h-6" fill="currentColor" />
+                    </div>
+                 </div>
+               </a>
+             </div>
           </div>
         )}
 
