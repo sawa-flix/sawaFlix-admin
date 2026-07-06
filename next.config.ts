@@ -5,8 +5,17 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      bodySizeLimit: '12mb', // Set this higher than your 10MB check
+      bodySizeLimit: '12mb',
     },
+  },
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sawaflix-backend.onrender.com';
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
+      },
+    ];
   },
   images: {
     remotePatterns: [
