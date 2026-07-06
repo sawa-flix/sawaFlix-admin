@@ -38,7 +38,7 @@ interface VerificationItem {
 }
 
 const CATEGORIES = [
-    "All Requests",
+    "All",
     "Traditional Storyteller",
     "Food & Lifestyle",
     "Actor/Filmmaker",
@@ -49,7 +49,7 @@ const CATEGORIES = [
 export default function VerificationQueue() {
     const [items, setItems] = useState<VerificationItem[]>([]);
     const [currentStatus, setCurrentStatus] = useState<VerificationItem['status'] | 'all'>('pending');
-    const [filterCategory, setFilterCategory] = useState('All Requests');
+    const [filterCategory, setFilterCategory] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -90,7 +90,7 @@ export default function VerificationQueue() {
             }
 
             const statusParam = currentStatus === 'all' ? '' : `status=${currentStatus}`;
-            const categoryParam = filterCategory === 'All Requests' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
+            const categoryParam = filterCategory === 'All' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
             const res = await fetch(`${LIVEURL}/api/admin/verifications?${statusParam}${categoryParam}`, {
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`,
@@ -147,9 +147,15 @@ export default function VerificationQueue() {
     }, [currentStatus, filterCategory]); // Re-run effect when status or category changes
 
     const filteredItems = items.filter(item => {
-        const name = item.stage_name || item.identity?.stageName || item.legal_name || item.full_name || item.identity?.legalName || "Unknown Creator";
-        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+        const resolvedName = item.stage_name || item.identity?.stageName || item.legal_name || item.full_name || item.identity?.legalName || "Unknown Creator";
+        const matchesSearch = resolvedName.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (filterCategory === 'All') return matchesSearch;
+        
+        const itemCat = (item.category || "").trim().toLowerCase();
+        const filterCat = filterCategory.trim().toLowerCase();
+        
+        return matchesSearch && itemCat === filterCat;
     });
 
     const isPendingView = currentStatus === 'pending';
