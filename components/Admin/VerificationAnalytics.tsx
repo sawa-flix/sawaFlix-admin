@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Clock, CheckCircle, XCircle, Users, Activity } from "lucide-react";
+import { getFriendlyError } from "@/utils/errorMessages";
 
 interface StatsData {
   userStats?: {
@@ -74,7 +75,7 @@ export default function VerificationAnalytics() {
             console.log("Analytics Debug - Processed Data:", finalStats);
             setStats(finalStats);
           } else {
-            setError(`Stats API: ${statsRes.value.status} ${statsRes.value.statusText}`);
+            setError(getFriendlyError(`Stats API: ${statsRes.value.status} ${statsRes.value.statusText}`));
           }
         }
 
@@ -114,7 +115,7 @@ export default function VerificationAnalytics() {
         }
 
       } catch (err) {
-        setError("Network error connecting to backend.");
+        setError(getFriendlyError(err));
         console.error("Failed to fetch analytics:", err);
       } finally {
         setLoading(false);

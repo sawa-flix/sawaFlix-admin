@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { createClient } from '@/utils/supabase/client';
+import { getFriendlyError } from '@/utils/errorMessages';
 
 const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
 const supabase = createClient();
@@ -101,7 +102,7 @@ export default function VerificationQueue() {
                 if (res.status === 401 || res.status === 403) {
                      console.error(`Verifications API returned ${res.status}: Forbidden.`);
                      await supabase.auth.signOut();
-                     window.location.href = '/login?error=You+do+not+have+permission+to+access+this+page.';
+                     window.location.href = '/login?error=You+do+not+have+permission+to+access+this+page';
                      if (!isBackground) setLoading(false);
                      return;
                 }

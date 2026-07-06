@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { getFriendlyError } from '@/utils/errorMessages';
 
 const supabase = createClient();
 
@@ -38,7 +39,7 @@ const AuthButton = ({ children, isLoading, variant = 'primary', className = '', 
 function LoginContent() {
   const searchParams = useSearchParams();
   const urlError = searchParams.get('error');
-  const [error, setError] = useState<string | null>(urlError);
+  const [error, setError] = useState<string | null>(urlError ? getFriendlyError(urlError) : null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -92,7 +93,7 @@ function LoginContent() {
 
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.message || 'An unexpected error occurred. Please try again.');
+      setError(getFriendlyError(err));
       setIsLoading(false);
     }
   };

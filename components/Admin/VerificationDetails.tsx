@@ -18,6 +18,7 @@ import {
     AlertCircle,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { getFriendlyError } from '@/utils/errorMessages';
 import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 
 interface VerificationData {
@@ -147,12 +148,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                 setData(result.data);
             } catch (err: any) {
                 console.error('Fetch error:', err);
-                if (err.message.startsWith('BACKEND_ERROR')) {
-                    const [_, status, text, url] = err.message.split('|');
-                    setError(`Backend returned ${status} (${text}) for ${url}. This is a backend configuration issue.`);
-                } else {
-                    setError(err.message || 'Failed to load verification details. Please ensure the backend is running.');
-                }
+                setError(getFriendlyError(err));
             } finally {
                 setLoading(false);
             }
@@ -228,7 +224,7 @@ export default function VerificationDetails({ id }: { id: string }) {
 
         } catch (err: any) {
             console.error(err);
-            setToast({ message: err.message || 'Something went wrong. Please try again.', type: 'error' });
+            setToast({ message: getFriendlyError(err), type: 'error' });
             addNotification({
                 type: 'info',
                 title: 'Action Failed',
