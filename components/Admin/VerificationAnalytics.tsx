@@ -45,7 +45,7 @@ export default function VerificationAnalytics() {
     const fetchAllData = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (!session) {
           setError("Not authenticated. Please log in.");
           setLoading(false);
@@ -149,7 +149,7 @@ export default function VerificationAnalytics() {
     {
       title: "Pending Reviews",
       value: getVal(
-        pendingCount, 
+        pendingCount,
         stats?.queueStats?.pending ?? stats?.pending_count ?? stats?.pending
       ).toString(),
       subtext: "Waiting for your review",
@@ -191,7 +191,7 @@ export default function VerificationAnalytics() {
             <h2 className="text-xl font-bold text-white">Verification Overview</h2>
             <span className="px-1.5 py-0.5 bg-green-500/10 text-green-500 border border-green-500/20 rounded text-[10px] uppercase font-bold tracking-tighter">Live</span>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">Real-time performance metrics from Render</p>
+          <p className="text-xs text-gray-500 mt-0.5">Real-time performance metrics</p>
         </div>
         {error && (
           <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] rounded animate-pulse">
@@ -199,16 +199,16 @@ export default function VerificationAnalytics() {
           </div>
         )}
         {stats?.topPerformers && (
-            <div className="hidden md:block">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-right mb-1">Top Performers</p>
-                <div className="flex -space-x-2">
-                    {stats.topPerformers.map((name, i) => (
-                        <div key={i} className="w-6 h-6 rounded-full bg-red-600 border border-gray-900 flex items-center justify-center text-[10px] text-white font-bold" title={name}>
-                            {name.charAt(0)}
-                        </div>
-                    ))}
+          <div className="hidden md:block">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-right mb-1">Top Performers</p>
+            <div className="flex -space-x-2">
+              {stats.topPerformers.map((name, i) => (
+                <div key={i} className="w-6 h-6 rounded-full bg-red-600 border border-gray-900 flex items-center justify-center text-[10px] text-white font-bold" title={name}>
+                  {name.charAt(0)}
                 </div>
+              ))}
             </div>
+          </div>
         )}
       </div>
 
@@ -231,13 +231,13 @@ export default function VerificationAnalytics() {
 
       {metrics.length > 0 && (
         <div className="mt-6 flex flex-wrap gap-3">
-            {metrics.map((m, i) => (
-                <div key={i} className="px-3 py-1 bg-gray-900 border border-gray-800 rounded-full text-[11px] text-gray-400 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]"></span>
-                    <span className="capitalize">{(m.status || 'unknown').replace('_', ' ')}:</span>
-                    <span className="text-white font-bold">{m.count}</span>
-                </div>
-            ))}
+          {metrics.map((m, i) => (
+            <div key={i} className="px-3 py-1 bg-gray-900 border border-gray-800 rounded-full text-[11px] text-gray-400 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]"></span>
+              <span className="capitalize">{(m.status || 'unknown').replace('_', ' ')}:</span>
+              <span className="text-white font-bold">{m.count}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
