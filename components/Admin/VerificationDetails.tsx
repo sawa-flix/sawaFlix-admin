@@ -77,7 +77,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
         </div>
     );
 }
-const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
+const LIVEURL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
 const supabase = createClient();
 export default function VerificationDetails({ id }: { id: string }) {
     const router = useRouter();

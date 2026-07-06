@@ -1,23 +1,26 @@
 'use client';
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
     Settings,
     ShieldCheck,
     LogOut,
-    Bell
+    Bell,
+    Video,
+    Star
 } from 'lucide-react';
 
 export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
-    const [active, setActive] = useState('dashboard');
+    const pathname = usePathname();
 
     const menuItems = [
         { name: 'Verifications', icon: ShieldCheck, id: 'dashboard', route: '/admin' },
+        { name: 'Content', icon: Video, id: 'admin-content', route: '/admin/content' },
     ];
 
-    const handleItemClick = (itemId: string) => {
-        setActive(itemId);
+    const handleItemClick = () => {
         onNavigate?.();
     };
 
@@ -38,13 +41,15 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
             <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
                 {menuItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = active === item.id;
+                    const isActive = item.route === '/admin' 
+                        ? pathname === '/admin' 
+                        : pathname?.startsWith(item.route);
 
                     return (
                         <Link
                             key={item.id}
                             href={item.route}
-                            onClick={() => handleItemClick(item.id)}
+                            onClick={handleItemClick}
                             className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 group ${isActive
                                 ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/20'
                                 : 'hover:bg-gray-800 text-gray-300 hover:text-white'

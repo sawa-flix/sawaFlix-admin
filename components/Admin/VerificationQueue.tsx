@@ -18,7 +18,7 @@ import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { createClient } from '@/utils/supabase/client';
 import { getFriendlyError } from '@/utils/errorMessages';
 
-const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
+const LIVEURL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
 const supabase = createClient();
 
 interface VerificationItem {
@@ -57,15 +57,22 @@ export default function VerificationQueue() {
     const [bulkLoading, setBulkLoading] = useState(false);
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [pendingCount, setPendingCount] = useState<number>(0);
+    const [apiError, setApiError] = useState<string | null>(null);
 
     const { addNotification } = useAdminNotifications();
 
+    // Helper: get a fresh access token using getUser() (validated by middleware)
+    const getAccessToken = async (): Promise<string | null> => {
+        const { data: { session } } = await supabase.auth.getSession();
+        return session?.access_token ?? null;
+    };
+
     const fetchPendingCount = async () => {
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
+            const token = await getAccessToken();
+            if (!token) return;
             const res = await fetch(`${LIVEURL}/api/admin/pending-count`, {
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
@@ -77,16 +84,21 @@ export default function VerificationQueue() {
     };
 
     const fetchData = async (isBackground = false) => {
-        if (!isBackground) setLoading(true);
+        if (!isBackground) {
+            setLoading(true);
+            setApiError(null);
+        }
         // Also refresh pending count in background
         fetchPendingCount();
         try {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session) {
-                console.warn('No auth session available. Redirecting to login...');
-                window.location.href = '/login';
-                if (!isBackground) setLoading(false);
+            const token = await getAccessToken();
+
+            if (!token) {
+                console.warn('No access token available.');
+                if (!isBackground) {
+                    setApiError('Session expired. Please refresh the page.');
+                    setLoading(false);
+                }
                 return;
             }
 
@@ -94,19 +106,24 @@ export default function VerificationQueue() {
             const categoryParam = filterCategory === 'All' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
             const res = await fetch(`${LIVEURL}/api/admin/verifications?${statusParam}${categoryParam}`, {
                 headers: {
-                    'Authorization': `Bearer ${session.access_token}`,
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
             if (!res.ok) {
-                if (res.status === 401 || res.status === 403) {
-                     console.error(`Verifications API returned ${res.status}: Forbidden.`);
-                     await supabase.auth.signOut();
-                     window.location.href = '/login?error=You+do+not+have+permission+to+access+this+page';
-                     if (!isBackground) setLoading(false);
-                     return;
+                if (res.status === 401) {
+                    // True authentication failure — session is invalid
+                    console.warn('Verifications API returned 401: Unauthorized. Session may be expired.');
+                    if (!isBackground) setApiError('Your session has expired. Please log in again.');
+                } else if (res.status === 403) {
+                    // Authorization issue on the backend — do NOT sign out.
+                    // The admin is authenticated; this is a backend API permissions issue.
+                    console.warn(`Verifications API returned 403: access denied.`);
+                    if (!isBackground) setApiError('You do not have permission to view verification requests.');
+                } else {
+                    console.warn(`Verifications API returned ${res.status}: ${res.statusText}`);
+                    if (!isBackground) setApiError(`Unable to load verification requests. Please try again later.`);
                 }
-                console.error(`Verifications API returned ${res.status}: ${res.statusText}`);
                 if (!isBackground) setLoading(false);
                 return;
             }
@@ -130,7 +147,8 @@ export default function VerificationQueue() {
                 console.log("Sample Item:", fetchedItems[0]);
             }
         } catch (error) {
-            console.error("Failed to fetch verifications:", error);
+            console.warn("Failed to fetch verifications:", error);
+            if (!isBackground) setApiError('Network error. Please check your connection.');
         } finally {
             if (!isBackground) setLoading(false);
         }
@@ -258,6 +276,18 @@ export default function VerificationQueue() {
                         {currentStatus === 'all' ? 'All' : currentStatus.replace('_', ' ')} applications 
                         {filterCategory !== 'All' ? ` in ${filterCategory}` : ''}
                     </p>
+
+                    {apiError && (
+                        <div className="mt-4 bg-red-900/50 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg flex items-start gap-3">
+                            <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div>
+                                <h3 className="text-sm font-medium text-red-300">Data Fetching Error</h3>
+                                <p className="text-sm mt-1 text-red-200/80">{apiError}</p>
+                            </div>
+                        </div>
+                    )}
 
                     {selectedIds.size > 0 && (
                         <div className="mt-4 flex items-center gap-4 animate-in fade-in slide-in-from-top-2">

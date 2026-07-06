@@ -16,22 +16,30 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
 
     React.useEffect(() => {
         const checkAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (!session) {
+            // Use getUser() instead of getSession() - it validates the JWT with the server
+            // and is more reliable after a hard redirect (window.location.href)
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            console.log("AdminLayoutWrapper: user fetched:", user ? { email: user.email, id: user.id } : null, "error:", userError?.message);
+
+            if (!user) {
+                console.log("AdminLayoutWrapper: No user found, redirecting to /login");
                 router.push('/login');
                 return;
             }
 
             // Verify admin role via server action to bypass RLS
-            const { role } = await checkAdminRole(session.user.id);
+            console.log("AdminLayoutWrapper: Verifying admin role for user ID:", user.id);
+            const { role, error } = await checkAdminRole(user.id);
+            console.log("AdminLayoutWrapper: role check response:", { role, error });
 
             if (role !== 'admin') {
+                console.log("AdminLayoutWrapper: Role is not admin (" + role + "), signing out and redirecting");
                 await supabase.auth.signOut();
                 router.push('/login?error=Access+denied.+This+portal+is+restricted+to+administrators+only.');
                 return;
             }
 
+            console.log("AdminLayoutWrapper: Authorized as admin!");
             setAuthorized(true);
             setIsVerifying(false);
         };

@@ -31,7 +31,7 @@ interface MetricItem {
 
 import { createClient } from '@/utils/supabase/client';
 const supabase = createClient();
-const LIVEURL = '';
+const LIVEURL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
 
 export default function VerificationAnalytics() {
   const [stats, setStats] = useState<StatsData | null>(null);
