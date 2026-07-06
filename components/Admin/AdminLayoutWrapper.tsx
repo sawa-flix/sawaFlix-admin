@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useCallback } from 'react';
-import Header from '../Dashboard/Header'; // Reusing standard header for now
+import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import AdminToast from './AdminToast';
 
@@ -18,7 +18,8 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     return (
         <div className="min-h-screen bg-gray-900">
             {/* Header */}
-            <Header sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} hideSearch={true} />
+            <AdminHeader sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+
 
             <div className="flex pt-16">
                 {/* Mobile sidebar overlay */}
