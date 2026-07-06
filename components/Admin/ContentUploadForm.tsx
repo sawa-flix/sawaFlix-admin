@@ -145,7 +145,7 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
   };
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 sm:p-8 max-w-3xl mx-auto shadow-xl">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-xl">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
           <FileVideo size={22} />
