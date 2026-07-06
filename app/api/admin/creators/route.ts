@@ -55,7 +55,7 @@ export async function GET(req: Request) {
 
   try {
     // 2. Fetch from the Submissions table (since that's where status lives)
-    // We join 'creator_profiles' and 'users' inside this one query
+    // We simplify the join to let Supabase detect the relationship automatically
     const { data: submissions, error, count } = await supabase
       .from("verification_submissions")
       .select(`
@@ -69,7 +69,7 @@ export async function GET(req: Request) {
           stage_name,
           profile_picture_url
         ),
-        users!verification_submissions_creator_id_fkey (
+        users (
           email,
           username
         )
@@ -78,7 +78,10 @@ export async function GET(req: Request) {
       .order("created_at", { ascending: false })
       .range(rangeStart, rangeEnd);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase Query Error:", error);
+      throw error;
+    }
 
     if (!submissions || submissions.length === 0) {
       return NextResponse.json({
@@ -90,15 +93,26 @@ export async function GET(req: Request) {
     }
 
     // 3. Clean up the response structure for the frontend
-    const formattedData = submissions.map(sub => ({
-      id: sub.creator_id,
-      status: sub.status,
-      category: sub.category,
-      appliedAt: sub.created_at,
-      formData: sub.form_data,
-      profile: sub.creator_profiles,
-      user: sub.users
-    }));
+    const formattedData = submissions.map(sub => {
+      // Handle potential array responses for joins
+      const profile = Array.isArray(sub.creator_profiles) ? sub.creator_profiles[0] : sub.creator_profiles;
+      const user = Array.isArray(sub.users) ? sub.users[0] : sub.users;
+
+      return {
+        id: sub.creator_id,
+        status: sub.status,
+        category: sub.category,
+        appliedAt: sub.created_at,
+        email: user?.email || "",
+        full_name: profile?.legal_name || sub.form_data?.identity?.legalName || "No Name",
+        stage_name: profile?.stage_name || "",
+        avatar_url: profile?.profile_picture_url || sub.form_data?.identity?.avatarUrl || null,
+        user: {
+          email: user?.email,
+          username: user?.username
+        }
+      };
+    });
 
     return NextResponse.json({
       creators: formattedData,

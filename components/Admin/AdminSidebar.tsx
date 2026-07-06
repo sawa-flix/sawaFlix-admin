@@ -15,7 +15,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
     const menuItems = [
         { name: 'Verifications', icon: ShieldCheck, id: 'dashboard', route: '/admin' },
-        { name: 'All Users', icon: Users, id: 'users', route: '/admin/users' },
+        { name: 'Creators', icon: Users, id: 'users', route: '/admin/creators' },
     ];
 
     const handleItemClick = (itemId: string) => {

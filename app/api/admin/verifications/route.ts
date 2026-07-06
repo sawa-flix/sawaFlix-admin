@@ -30,6 +30,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const category = searchParams.get("category");
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -41,8 +42,12 @@ export async function GET(req: Request) {
       .from("verification_submissions")
       .select("creator_id, status, category, form_data, created_at, updated_at");
 
-    if (status) {
+    if (status && status !== 'all') {
       query = query.eq("status", status);
+    }
+    
+    if (category && category !== 'All') {
+      query = query.eq("category", category);
     }
 
 

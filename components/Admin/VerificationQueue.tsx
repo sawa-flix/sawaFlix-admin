@@ -10,11 +10,15 @@ import {
     XCircle,
     Inbox,
     Loader2,
-    CheckSquare
+    CheckSquare,
+    MoreVertical,
+    CheckCircle
 } from 'lucide-react';
-import { useAdminNotifications } from '../../contexts/AdminNotificationContext';
+import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
+import { createClient } from '@/utils/supabase/client';
 
 const LIVEURL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sawaflix-backend.onrender.com';
+const supabase = createClient();
 
 interface VerificationItem {
     id: string;
@@ -36,18 +40,27 @@ const CATEGORIES = [
 
 export default function VerificationQueue() {
     const [items, setItems] = useState<VerificationItem[]>([]);
+    const [currentStatus, setCurrentStatus] = useState<VerificationItem['status'] | 'all'>('pending');
     const [filterCategory, setFilterCategory] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [bulkLoading, setBulkLoading] = useState(false);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
 
     const { addNotification } = useAdminNotifications();
 
     const fetchData = async (isBackground = false) => {
         if (!isBackground) setLoading(true);
         try {
-            const res = await fetch(`${LIVEURL}/api/admin/verifications`);
+            const { data: { session } } = await supabase.auth.getSession();
+            const categoryParam = filterCategory === 'All' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
+            const res = await fetch(`${LIVEURL}/api/admin/verifications?status=${currentStatus}${categoryParam}`, {
+                headers: {
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             if (res.ok) {
                 const data = await res.json();
                 const fetchedItems = data.data || [];
@@ -80,23 +93,22 @@ export default function VerificationQueue() {
         }, 30000);
 
         return () => clearInterval(pollInterval);
-    }, [items.length]); // Re-run effect only if items length changes to keep closure fresh
+    }, [currentStatus, filterCategory]); // Re-run effect when status or category changes
 
     const filteredItems = items.filter(item => {
-        const matchesCategory = filterCategory === 'All' || item.category === filterCategory;
         const matchesSearch = item.full_name.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesCategory && matchesSearch;
+        return matchesSearch;
     });
 
-    const pendingFilteredItems = filteredItems.filter(i => i.status === 'pending');
-    const allSelected = pendingFilteredItems.length > 0 && pendingFilteredItems.every(i => selectedIds.has(i.id));
+    const isPendingView = currentStatus === 'pending';
+    const allSelected = isPendingView && filteredItems.length > 0 && filteredItems.every(i => selectedIds.has(i.id));
 
     const toggleSelectAll = () => {
         if (allSelected) {
             setSelectedIds(new Set());
         } else {
             const newSet = new Set(selectedIds);
-            pendingFilteredItems.forEach(i => newSet.add(i.id));
+            filteredItems.forEach(i => newSet.add(i.id));
             setSelectedIds(newSet);
         }
     };
@@ -115,14 +127,18 @@ export default function VerificationQueue() {
 
         setBulkLoading(true);
         try {
-            const promises = Array.from(selectedIds).map(id =>
-                fetch(`${LIVEURL}/api/admin/verify`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ target_creator_id: id, status: 'approved', notes: 'Bulk Approved by Admin' }),
+            const { data: { session } } = await supabase.auth.getSession();
+            const approvePromises = Array.from(selectedIds).map(id =>
+                fetch(`${LIVEURL}/api/admin/verifications/${id}/approve`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${session?.access_token}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ notes: 'Bulk approved by admin' })
                 })
             );
-            await Promise.all(promises);
+            await Promise.all(approvePromises);
 
             addNotification({
                 type: 'approved',
@@ -161,10 +177,13 @@ export default function VerificationQueue() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
                     <h1 className="text-2xl font-bold text-white">Verification Queue</h1>
-                    <p className="text-gray-400 text-sm mt-1">Review pending creator applications</p>
+                    <p className="text-gray-400 text-sm mt-1">
+                        {currentStatus === 'all' ? 'All' : currentStatus.replace('_', ' ')} applications 
+                        {filterCategory !== 'All' ? ` in ${filterCategory}` : ''}
+                    </p>
 
                     {selectedIds.size > 0 && (
                         <div className="mt-4 flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
@@ -189,21 +208,85 @@ export default function VerificationQueue() {
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    {/* Status Filter (Custom Dropdown) */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                            className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-2 text-sm text-gray-300 hover:text-white hover:border-red-600/50 flex items-center gap-2 transition-all min-w-[170px] justify-between shadow-lg"
+                        >
+                            <div className="flex items-center gap-2">
+                                <div className={currentStatus === 'all' ? 'text-gray-500' : 'text-red-500'}>
+                                    {currentStatus === 'pending' && <Clock size={16} />}
+                                    {currentStatus === 'approved' && <CheckCircle2 size={16} className="text-green-500" />}
+                                    {currentStatus === 'rejected' && <XCircle size={16} className="text-red-500" />}
+                                    {currentStatus === 'all' && <Filter size={16} />}
+                                    {currentStatus === 'info_requested' && <Inbox size={16} />}
+                                </div>
+                                <span className="capitalize">{currentStatus === 'all' ? 'All Status' : currentStatus.replace('_', ' ')}</span>
+                            </div>
+                            <MoreVertical size={14} className="text-gray-500" />
+                        </button>
+
+                        {isStatusDropdownOpen && (
+                            <>
+                                <div 
+                                    className="fixed inset-0 z-10" 
+                                    onClick={() => setIsStatusDropdownOpen(false)} 
+                                />
+                                <div className="absolute right-0 mt-2 w-56 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="p-2 border-b border-gray-800 bg-gray-950/50">
+                                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-2">Filter Status</p>
+                                    </div>
+                                    <div className="p-1">
+                                        {[
+                                            { value: 'all', label: 'All Status', icon: <Filter size={14} /> },
+                                            { value: 'pending', label: 'Pending', icon: <Clock size={14} /> },
+                                            { value: 'approved', label: 'Approved', icon: <CheckCircle2 size={14} className="text-green-500" /> },
+                                            { value: 'rejected', label: 'Rejected', icon: <XCircle size={14} className="text-red-500" /> },
+                                            { value: 'info_requested', label: 'Info Requested', icon: <Inbox size={14} /> }
+                                        ].map((opt) => (
+                                            <button
+                                                key={opt.value}
+                                                onClick={() => {
+                                                    setCurrentStatus(opt.value as any);
+                                                    setSelectedIds(new Set());
+                                                    setIsStatusDropdownOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                                                    currentStatus === opt.value 
+                                                    ? 'bg-red-600/10 text-red-500 font-bold' 
+                                                    : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    {opt.icon}
+                                                    {opt.label}
+                                                </div>
+                                                {currentStatus === opt.value && <CheckCircle size={14} />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative w-full sm:w-64">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                         <input
                             type="text"
-                            placeholder="Search creator..."
+                            placeholder="Search names..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white focus:outline-none focus:border-red-500/50 focus:ring-1 focus:ring-red-500/50 transition-all placeholder:text-gray-600"
+                            className="bg-gray-900 border border-gray-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-red-600/50 focus:ring-1 focus:ring-red-600/50 w-full transition-all shadow-lg"
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Filters (Tabs) */}
+            {/* Category Filters (Tabs - Reverted) */}
             <div className="flex overflow-x-auto pb-2 scrollbar-none gap-2 border-b border-gray-800/50">
                 {CATEGORIES.map((cat) => (
                     <button
@@ -214,7 +297,7 @@ export default function VerificationQueue() {
                             : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-800 hover:cursor-pointer'
                             }`}
                     >
-                        {cat === 'All' ? 'All Requests' : cat}
+                        {cat}
                     </button>
                 ))}
             </div>
@@ -242,7 +325,7 @@ export default function VerificationQueue() {
                                             type="checkbox"
                                             checked={allSelected}
                                             onChange={toggleSelectAll}
-                                            disabled={pendingFilteredItems.length === 0}
+                                            disabled={!isPendingView || filteredItems.length === 0}
                                             className="rounded border-gray-600 bg-gray-700 text-red-500 focus:ring-red-500 focus:ring-offset-gray-900 w-4 h-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                         />
                                     </th>

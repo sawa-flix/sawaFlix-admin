@@ -17,7 +17,8 @@ import {
     Loader2,
     AlertCircle,
 } from 'lucide-react';
-import { useAdminNotifications } from '../../contexts/AdminNotificationContext';
+import { createClient } from '@/utils/supabase/client';
+import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 
 interface VerificationData {
     id: string;
@@ -76,6 +77,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
     );
 }
 const LIVEURL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://sawaflix-backend.onrender.com';
+const supabase = createClient();
 export default function VerificationDetails({ id }: { id: string }) {
     const router = useRouter();
     const [data, setData] = useState<VerificationData | null>(null);
@@ -110,14 +112,29 @@ export default function VerificationDetails({ id }: { id: string }) {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            setError('');
             try {
-                const res = await fetch(`${LIVEURL}/api/admin/verifications/{slug}${id}`);
-                if (!res.ok) throw new Error('Failed to fetch verification details');
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await fetch(`${LIVEURL}/api/admin/verifications/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${session?.access_token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (res.status === 404) {
+                    throw new Error('Verification request not found. It may have been deleted or moved.');
+                }
+                
+                if (!res.ok) {
+                    throw new Error(`Server returned error: ${res.statusText}`);
+                }
+                
                 const result = await res.json();
                 setData(result.data);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load verification details. Please try again.');
+            } catch (err: any) {
+                console.error('Fetch error:', err);
+                setError(err.message || 'Failed to load verification details. Please ensure the backend is running.');
             } finally {
                 setLoading(false);
             }
@@ -134,22 +151,22 @@ export default function VerificationDetails({ id }: { id: string }) {
 
         setActionLoading(true);
 
-        // Map action type to the correct Render API endpoint
-        const endpointMap: Record<string, string> = {
-            approve: `${LIVEURL}/api/admin/verifications/${id}/approve`,
-            reject: `${LIVEURL}/api/admin/verifications/${id}/reject`,
-            info: `${LIVEURL}/api/admin/verifications/${id}/reject`, // info_requested uses reject route with a flag
-        };
-
         try {
-            const res = await fetch(endpointMap[type], {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    feedback: feedback.trim(),
-                    notes: feedback.trim() || `Action performed: ${type}`,
-                    ...(type === 'info' && { status: 'info_requested' }),
-                })
+            const { data: { session } } = await supabase.auth.getSession();
+            const body: any = {
+                target_creator_id: id,
+                status: type === 'approve' ? 'approved' : type === 'reject' ? 'rejected' : 'info_requested',
+                notes: feedback.trim() || (type === 'approve' ? 'Approved by admin' : `Action: ${type}`),
+            };
+
+            const url = `${LIVEURL}/api/admin/verify`;
+            const res = await fetch(url, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify(body)
             });
 
             if (!res.ok) {
