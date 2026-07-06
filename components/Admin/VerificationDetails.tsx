@@ -122,8 +122,15 @@ export default function VerificationDetails({ id }: { id: string }) {
                     }
                 });
                 
+                console.log(`Fetching details for ID: ${id}, Status: ${res.status}`);
+                
+                if (res.status === 401 || res.status === 403) {
+                    router.push('/login?error=Access+denied.+This+portal+is+restricted+to+administrators+only.');
+                    return;
+                }
+                
                 if (res.status === 404) {
-                    throw new Error('Verification request not found. It may have been deleted or moved.');
+                    throw new Error(`Verification request not found (#${id}). Please verify the creator exists in the database.`);
                 }
                 
                 if (!res.ok) {
@@ -143,6 +150,11 @@ export default function VerificationDetails({ id }: { id: string }) {
         if (id) fetchData();
     }, [id]);
 
+    const resolveName = (item: any) => {
+        if (!item) return "Unknown Creator";
+        return item.legal_name || item.stage_name || item.full_name || (item.identity?.legalName) || "Unknown Creator";
+    };
+
     const handleAction = async (type: 'approve' | 'reject' | 'info') => {
         if ((type === 'reject' || type === 'info') && !feedback.trim()) {
             setToast({ message: 'Please enter a message before submitting.', type: 'error' });
@@ -153,20 +165,24 @@ export default function VerificationDetails({ id }: { id: string }) {
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            const body: any = {
-                target_creator_id: id,
-                status: type === 'approve' ? 'approved' : type === 'reject' ? 'rejected' : 'info_requested',
-                notes: feedback.trim() || (type === 'approve' ? 'Approved by admin' : `Action: ${type}`),
-            };
+            
+            if (!session) {
+                console.warn('No auth session available for verification action');
+                window.location.href = '/login';
+                return;
+            }
 
-            const url = `${LIVEURL}/api/admin/verify`;
+            // endpoints from screenshot: /api/admin/verifications/{slug}/approve (POST)
+            const endpoint = type === 'approve' ? 'approve' : type === 'reject' ? 'reject' : 'info';
+            const url = `${LIVEURL}/api/admin/verifications/${id}/${endpoint}`;
+            
             const res = await fetch(url, {
-                method: 'PUT',
+                method: 'POST',
                 headers: { 
-                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Authorization': `Bearer ${session.access_token}`,
                     'Content-Type': 'application/json' 
                 },
-                body: JSON.stringify(body)
+                body: JSON.stringify({ notes: feedback.trim() || (type === 'approve' ? 'Approved by admin' : `Action: ${type}`) })
             });
 
             if (!res.ok) {
@@ -175,7 +191,7 @@ export default function VerificationDetails({ id }: { id: string }) {
             }
 
             // Sync with Global Admin Notifications
-            const creatorName = data?.identity.legalName || 'Creator';
+            const creatorName = resolveName(data);
             addNotification({
                 type: type === 'approve' ? 'approved' : type === 'reject' ? 'rejected' : 'info',
                 title: type === 'approve' ? 'Creator Approved' : type === 'reject' ? 'Creator Rejected' : 'Info Requested',
@@ -205,7 +221,7 @@ export default function VerificationDetails({ id }: { id: string }) {
             addNotification({
                 type: 'info',
                 title: 'Action Failed',
-                message: `Failed to ${type} ${data?.identity.legalName || 'this creator'}. Please try again.`
+                message: `Failed to ${type} ${resolveName(data)}. Please try again.`
             });
         } finally {
             setActionLoading(false);
@@ -240,6 +256,7 @@ export default function VerificationDetails({ id }: { id: string }) {
         );
     }
 
+    const resolvedName = (data as any)?.legal_name || (data as any)?.stage_name || (data as any)?.full_name || data?.identity?.legalName || "Unknown Creator";
     const currentStatus = statusConfig[data.status] ?? statusConfig.pending;
     const isActionable = data.status === 'pending' || data.status === 'info_requested';
 
@@ -290,11 +307,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                         <div className="space-y-4">
                             <div>
                                 <label className="text-xs text-gray-500 block">Name</label>
-                                <div className="text-white font-medium">{data.identity.legalName}</div>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 block">Email</label>
-                                <div className="text-gray-300 break-all">{data.identity.email}</div>
+                                <div className="text-white font-medium">{resolveName(data)}</div>
                             </div>
                             {data.identity.phone && (
                                 <div>
@@ -518,7 +531,7 @@ export default function VerificationDetails({ id }: { id: string }) {
                             </h3>
                             <p className="text-gray-400 text-sm">
                                 {actionModal === 'approve'
-                                    ? `You are about to approve "${data.identity.legalName}". They will gain verified creator access immediately.`
+                                    ? `You are about to approve "${resolvedName}". They will gain verified creator access immediately.`
                                     : actionModal === 'reject'
                                         ? 'This will permanently reject the submission. Provide a clear reason to the creator.'
                                         : 'The submission will stay in the queue with an "Info Requested" label until the creator resubmits.'}

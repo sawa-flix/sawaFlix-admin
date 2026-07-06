@@ -5,7 +5,6 @@ import {
     LayoutDashboard,
     Settings,
     ShieldCheck,
-    Users,
     LogOut,
     Bell
 } from 'lucide-react';
@@ -15,7 +14,6 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
 
     const menuItems = [
         { name: 'Verifications', icon: ShieldCheck, id: 'dashboard', route: '/admin' },
-        { name: 'Creators', icon: Users, id: 'users', route: '/admin/creators' },
     ];
 
     const handleItemClick = (itemId: string) => {

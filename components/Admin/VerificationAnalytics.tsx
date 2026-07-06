@@ -11,7 +11,10 @@ interface StatsData {
   avgTimeHours: string;
   rejectionsByCategory: Record<string, number>;
 }
-const LIVEURL = ''; // Use relative paths to avoid CORS 403 issues on local dev
+import { createClient } from '@/utils/supabase/client';
+const supabase = createClient();
+const LIVEURL = '';
+
 export default function VerificationAnalytics() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,8 +22,20 @@ export default function VerificationAnalytics() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.warn('No auth session found for analytics fetch');
+          setLoading(false);
+          return;
+        }
 
-        const res = await fetch(`${LIVEURL}/api/admin/stats`);
+        const res = await fetch(`${LIVEURL}/api/admin/stats`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         if (res.ok) {
           const result = await res.json();
           if (result.success) {
@@ -55,7 +70,7 @@ export default function VerificationAnalytics() {
   const cards = [
     {
       title: "Pending Reviews",
-      value: stats.pending.toString(),
+      value: (stats.pending || 0).toString(),
       subtext: "Applications waiting for review",
       icon: <Clock size={24} className="text-yellow-500" />,
       bg: "bg-yellow-500/10",
@@ -63,7 +78,7 @@ export default function VerificationAnalytics() {
     },
     {
       title: "Approval Rate",
-      value: `${stats.approvalRate}%`,
+      value: `${stats.approvalRate || '0'}%`,
       subtext: "Of processed applications",
       icon: <CheckCircle size={24} className="text-green-500" />,
       bg: "bg-green-500/10",
@@ -71,7 +86,7 @@ export default function VerificationAnalytics() {
     },
     {
       title: "Total Processed",
-      value: (stats.approved + stats.rejected).toString(),
+      value: ((stats.approved || 0) + (stats.rejected || 0)).toString(),
       subtext: "Total verifications resolved",
       icon: <Users size={24} className="text-blue-500" />,
       bg: "bg-blue-500/10",
@@ -79,7 +94,7 @@ export default function VerificationAnalytics() {
     },
     {
       title: "Avg. Turnaround",
-      value: `${stats.avgTimeHours}h`,
+      value: `${stats.avgTimeHours || '0'}h`,
       subtext: "Average time to resolution",
       icon: <Activity size={24} className="text-purple-500" />,
       bg: "bg-purple-500/10",

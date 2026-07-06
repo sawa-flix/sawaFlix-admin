@@ -22,11 +22,19 @@ const supabase = createClient();
 
 interface VerificationItem {
     id: string;
+    slug?: string;
     full_name: string;
+    legal_name?: string;
+    stage_name?: string;
     category: string;
     status: "pending" | "approved" | "rejected" | "info_requested";
     submitted_at: string;
     avatar_url?: string;
+    identity?: {
+        legalName?: string;
+        stageName?: string;
+        avatarUrl?: string;
+    };
 }
 
 const CATEGORIES = [
@@ -54,29 +62,48 @@ export default function VerificationQueue() {
         if (!isBackground) setLoading(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                console.warn('No auth session available. Redirecting to login...');
+                window.location.href = '/login';
+                if (!isBackground) setLoading(false);
+                return;
+            }
+
+            const statusParam = currentStatus === 'all' ? '' : `status=${currentStatus}`;
             const categoryParam = filterCategory === 'All' ? '' : `&category=${encodeURIComponent(filterCategory)}`;
-            const res = await fetch(`${LIVEURL}/api/admin/verifications?status=${currentStatus}${categoryParam}`, {
+            const res = await fetch(`${LIVEURL}/api/admin/verifications?${statusParam}${categoryParam}`, {
                 headers: {
-                    'Authorization': `Bearer ${session?.access_token}`,
+                    'Authorization': `Bearer ${session.access_token}`,
                     'Content-Type': 'application/json'
                 }
             });
-            if (res.ok) {
-                const data = await res.json();
-                const fetchedItems = data.data || [];
-
-                // If it's a background fetch and we have more items now, notify!
-                if (isBackground && fetchedItems.length > items.length) {
-                    const diff = fetchedItems.length - items.length;
-                    addNotification({
-                        type: 'new_submission',
-                        title: 'New Verification Requests',
-                        message: `${diff} new creator${diff > 1 ? 's have' : ' has'} applied for verification.`
-                    });
+            if (!res.ok) {
+                if (res.status === 401 || res.status === 403) {
+                     console.error(`Verifications API returned ${res.status}: Forbidden.`);
+                     await supabase.auth.signOut();
+                     window.location.href = '/login?error=You+do+not+have+permission+to+access+this+page.';
+                     if (!isBackground) setLoading(false);
+                     return;
                 }
-
-                setItems(fetchedItems);
+                console.error(`Verifications API returned ${res.status}: ${res.statusText}`);
+                if (!isBackground) setLoading(false);
+                return;
             }
+            const data = await res.json();
+            const fetchedItems = data.data || [];
+
+            // If it's a background fetch and we have more items now, notify!
+            if (isBackground && fetchedItems.length > items.length) {
+                const diff = fetchedItems.length - items.length;
+                addNotification({
+                    type: 'new_submission',
+                    title: 'New Verification Requests',
+                    message: `${diff} new creator${diff > 1 ? 's have' : ' has'} applied for verification.`
+                });
+            }
+
+            setItems(fetchedItems);
         } catch (error) {
             console.error("Failed to fetch verifications:", error);
         } finally {
@@ -96,7 +123,8 @@ export default function VerificationQueue() {
     }, [currentStatus, filterCategory]); // Re-run effect when status or category changes
 
     const filteredItems = items.filter(item => {
-        const matchesSearch = item.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const name = item.legal_name || item.stage_name || item.full_name || item.identity?.legalName || "Unknown Creator";
+        const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
 
@@ -128,8 +156,8 @@ export default function VerificationQueue() {
         setBulkLoading(true);
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            const approvePromises = Array.from(selectedIds).map(id =>
-                fetch(`${LIVEURL}/api/admin/verifications/${id}/approve`, {
+            const approvePromises = Array.from(selectedIds).map(slug => 
+                fetch(`${LIVEURL}/api/admin/verifications/${slug}/approve`, {
                     method: 'POST',
                     headers: { 
                         'Authorization': `Bearer ${session?.access_token}`,
@@ -355,12 +383,12 @@ export default function VerificationQueue() {
                                     const isSelected = selectedIds.has(item.id);
                                     return (
                                         <tr key={item.id} className={`group transition-colors ${isSelected ? 'bg-red-500/5' : 'hover:bg-gray-800/50'}`}>
-                                            <td className="px-6 py-4" onClick={(e) => { e.stopPropagation(); toggleSelect(item.id, isPending); }}>
+                                            <td className="px-6 py-4" onClick={(e) => { e.stopPropagation(); toggleSelect(item.slug || item.id, isPending); }}>
                                                 {isPending ? (
                                                     <input
                                                         type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => toggleSelect(item.id, isPending)}
+                                                        checked={selectedIds.has(item.slug || item.id)}
+                                                        onChange={() => toggleSelect(item.slug || item.id, isPending)}
                                                         className="rounded border-gray-600 bg-gray-700 text-red-500 focus:ring-red-500 focus:ring-offset-gray-900 w-4 h-4 cursor-pointer"
                                                     />
                                                 ) : (
@@ -368,15 +396,24 @@ export default function VerificationQueue() {
                                                 )}
                                             </td>
                                             <td className="px-6 py-4 cursor-pointer" onClick={() => toggleSelect(item.id, isPending)}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden relative border border-gray-700">
-                                                        <img src={item.avatar_url || `https://ui-avatars.com/api/?name=${item.full_name}`} alt={item.full_name} className="w-full h-full object-cover" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium text-white">{item.full_name}</div>
-                                                        <div className="text-xs text-gray-500">ID: #{item.id.substring(0, 8)}</div>
-                                                    </div>
-                                                </div>
+                                                {(() => {
+                                                    const resolvedName = item.legal_name || item.stage_name || item.full_name || item.identity?.legalName || "Unknown Creator";
+                                                    return (
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 rounded-full bg-gray-800 overflow-hidden relative border border-gray-700">
+                                                                <img
+                                                                    src={item.avatar_url || item.identity?.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}`}
+                                                                    alt={resolvedName}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-medium text-white">{resolvedName}</div>
+                                                                <div className="text-xs text-gray-500">ID: #{item.id.substring(0, 8)}</div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })()}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm text-gray-300 bg-gray-800 px-2 py-1 rounded border border-gray-700">
@@ -399,7 +436,7 @@ export default function VerificationQueue() {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <Link
-                                                    href={`/admin/verifications/${item.id}`}
+                                                    href={`/admin/verifications/${item.slug || item.id}`}
                                                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors shadow-lg shadow-red-900/20"
                                                 >
                                                     <Eye size={16} />
