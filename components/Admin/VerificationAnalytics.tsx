@@ -15,7 +15,8 @@ interface StatsData {
     total: number;
   };
   topPerformers?: string[];
-  // Fallback for legacy structure if needed
+  pending_count?: number;
+  completed_count?: number;
   pending?: number;
   approved?: number;
   rejected?: number;
