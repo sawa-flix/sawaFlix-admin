@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { getFriendlyError } from '@/utils/errorMessages';
+import { checkAdminRole } from '@/app/actions/auth';
 
 const supabase = createClient();
 
@@ -67,18 +68,13 @@ function LoginContent() {
         throw signInError;
       }
 
-      // Step 2: Confirm they are actually an admin by checking users table
-      const { data: userData, error: roleError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
+      // Step 2: Confirm they are actually an admin by checking users table via Server Action (bypasses RLS)
+      const { role, error: roleError } = await checkAdminRole(data.user.id);
 
       if (roleError) {
-        console.warn('Could not fetch role, continuing anyway', roleError);
+        console.warn('Could not fetch role via Server Action, continuing anyway', roleError);
       }
 
-      const role = userData?.role || 'client';
       if (role !== 'admin') {
         await supabase.auth.signOut();
         throw new Error('Access denied. Admin privileges required.');

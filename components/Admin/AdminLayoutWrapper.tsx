@@ -5,6 +5,7 @@ import AdminSidebar from './AdminSidebar';
 import AdminToast from './AdminToast';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
+import { checkAdminRole } from '@/app/actions/auth';
 
 const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,14 +23,10 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
                 return;
             }
 
-            // Verify admin role
-            const { data: userData } = await supabase
-                .from('users')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
+            // Verify admin role via server action to bypass RLS
+            const { role } = await checkAdminRole(session.user.id);
 
-            if (userData?.role !== 'admin') {
+            if (role !== 'admin') {
                 await supabase.auth.signOut();
                 router.push('/login?error=Access+denied.+This+portal+is+restricted+to+administrators+only.');
                 return;
