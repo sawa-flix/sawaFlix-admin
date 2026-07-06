@@ -9,6 +9,13 @@
   --card-bg: #151C25;
 }
 
+@theme {
+  --color-gray-950: #06080C; /* Darkest shade */
+  --color-gray-900: var(--background); /* Main background */
+  --color-gray-800: var(--card-bg); /* Cards and borders */
+  --color-gray-700: var(--secondary); /* Lighter elements */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
