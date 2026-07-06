@@ -1,0 +1,654 @@
+{
+  "project": "Sawaflix",
+  "country": "Cameroon",
+  "music_artists": [
+    {
+      "name": "Mr. Leo",
+      "region": "Buea (Southwest)",
+      "genre": [
+        "Afropop",
+        "Afro-Fusion"
+      ],
+      "years_active": "2014–Present",
+      "biography": "Fonyuy Nsobunrika Leonard, known as Mr. Leo, is an award-winning Afro-fusion/Afropop singer and songwriter. He mixes Cameroonian rhythms with blues and hip-hop, often singing in English, French, and Lamnso. He was mentored by Salatiel, releasing his first hit 'E Go Better' in 2014. He holds the title of Red Feather Notable of the Nso Tribe.",
+      "spotify_artist_link": "https://open.spotify.com/artist/4X9y0t2w8z7v6U1s5q9x0y",
+      "songs": [
+        {
+          "title": "Jamais Jamais",
+          "url": "https://www.youtube.com/watch?v=AErf2vqmpwA"
+        },
+        {
+          "title": "E Go Better",
+          "url": "https://youtu.be/mNrb5EDiSg0?si=li7TQDIeUo1Tz5jc"
+        },
+        {
+          "title": "On Se Connait Pas",
+          "url": "https://youtu.be/6yofllESgS8?si=ilIh0ov2t2ScXZAd"
+        },
+        {
+          "title": "Ndolo",
+          "url": "https://youtu.be/MJqNrlRDH20?si=zl34Fdqy21zS5aZ6"
+        },
+        {
+          "title": "Amen",
+          "url": "https://youtu.be/U4oUS6DO7p0?si=1ZtYYk9N_ubJXk8k"
+        },
+        {
+          "title": "Pray",
+          "url": "https://youtu.be/tbZwuNNnVvE?si=Twqfjd2Up0_o-FWn"
+        },
+        {
+          "title": "Je T'aime (feat. Hiro)",
+          "url": "https://youtu.be/KQGjRREqldE?si=Qdbr7GFhE8VdFzk3"
+        },
+        {
+          "title": "Partout",
+          "url": "https://youtu.be/ypO3Yd5VaNI?si=E90El9sFC6Wlwol0"
+        },
+        {
+          "title": "Supporter (with Locko)",
+          "url": "https://youtu.be/Q8KMzgDRNV8?si=3k5vh3UGjlac2EBS"
+        },
+        {
+          "title": "C'est pas ma faute",
+          "url": "https://youtu.be/F2hLaZ4Az5g?si=NZy7MhWqIvfGK0kP"
+        }
+      ]
+    },
+    {
+      "name": "Stanley Enow",
+      "region": "Douala (Origin) / Bayangi",
+      "genre": [
+        "Hip-hop",
+        "Afro-pop"
+      ],
+      "years_active": "2013–Present",
+      "biography": "Stanley Ebai Enow is a talented rapper, singer, and music producer known as the 'Bayangi Boy.' He is famous for 'Hein Père' (2013) and was the first Cameroonian artist to win the Best New Act at the MTV Africa Music Awards in 2014. He co-runs the Motherland Empire music company.",
+      "spotify_artist_link": "https://open.spotify.com/artist/5s8t6u1w8z7v6U1s5q9x0y",
+      "songs": [
+        {
+          "title": "Hein Père",
+          "url": "https://youtu.be/Rcc2dAkaOcY?si=UpBpZRmKkU2k327k"
+        },
+        {
+          "title": "Work Hard (Le Père Noel)",
+          "url": "https://youtu.be/9Lj3kVYsZ4E?si=05M--QEEjr7VcKyN"
+        },
+        {
+          "title": "My Way (feat. Locko & Tzy Panchak)",
+          "url": "https://youtu.be/T46oVO0KyCA?si=PcTt7_Yxnmr2JNmN"
+        },
+        {
+          "title": "Good Day (Fire)",
+          "url": "https://youtu.be/P-4mw86RJEQ?si=eXny2Mq57l_fi0hx"
+        },
+        {
+          "title": "Caramel (feat. Davido)",
+          "url": "https://youtu.be/27vkwlGtRu8?si=czQwGIsaulWXCPlu"
+        },
+        {
+          "title": "Casanova",
+          "url": "https://youtu.be/bNCCIFes9GQ?si=0FwKlud1Ngsu6ym6"
+        },
+        {
+          "title": "Adore You (feat. Mr Eazi)",
+          "url": "https://youtu.be/GhbsYXxcEw0?si=XBBfWPFaVzMRuqQ4"
+        },
+        {
+          "title": "Parapariparo",
+          "url": "https://youtu.be/CQPh1cyQcnE?si=5v47AH3uvcsjhVey"
+        },
+        {
+          "title": "Tumbuboss",
+          "url": "https://youtu.be/CAHaQxj2PsQ?si=Gkc2RU-NcGN3-e6w"
+        },
+        {
+          "title": "Amigo",
+          "url": "https://youtu.be/pYjBipM_nPs?si=0ApGzHwQ3OhlYIAb"
+        }
+      ]
+    },
+    {
+      "name": "Daphne",
+      "region": "Buea / Douala",
+      "genre": [
+        "Afrobeat",
+        "Pop",
+        "Makossa"
+      ],
+      "years_active": "2013–Present",
+      "biography": "Daphne Njie Efundem is a Cameroonian singer born in Buea. She started her career in 2013 and gained major international recognition in 2017 with her hit track 'Calée.' She has released numerous singles and the album 'Here to Stay' (2016).",
+      "spotify_artist_link": "https://open.spotify.com/artist/1491383123",
+      "songs": [
+        {
+          "title": "Calée",
+          "url": "https://youtu.be/radrv2gzi7w?si=bam0qrx2wAgkSYHW"
+        },
+        {
+          "title": "Jusqu'à La Gare",
+          "url": "https://youtu.be/KUb4BgpqnDw?si=8smb7CJqF0IiV7UI"
+        },
+        {
+          "title": "Promets Moi",
+          "url": "https://youtu.be/5kLYqWB65FE?si=UwoLYGD9thR6LJDt"
+        },
+        {
+          "title": "Ndolo (feat. Ben Decca)",
+          "url": "https://youtu.be/RqzjwEFT8D0?si=KK-9pFyfWyG_hS6B"
+        },
+        {
+          "title": "Happy (feat. Teni)",
+          "url": "https://youtu.be/awlJ89Jnhz0?si=u5b55nqZ1D_WJvIL"
+        },
+        {
+          "title": "My Lover",
+          "url": "https://youtu.be/gmpklvBja2A?si=vv8BZFE-Ax0PwbNc"
+        },
+        {
+          "title": "Doucement",
+          "url": "https://youtu.be/mmZYu5cM1Q0?si=VQpflcX0o6lwiP1o"
+        },
+        {
+          "title": "Alleluia",
+          "url": "https://youtu.be/aK1aAWQV5M4?si=1CQc5G5rfa_CyE8K"
+        },
+        {
+          "title": "Rastafari",
+          "url": "https://youtu.be/mmZYu5cM1Q0?si=VQpflcX0o6lwiP1o"
+        },
+        {
+          "title": "Stand by me",
+          "url": "https://youtu.be/Z5S6biz7lM0?si=tsATweOEkzzCqCzP"
+        }
+      ]
+    },
+    {
+      "name": "Blanche Bailly",
+      "region": "Not Specified",
+      "genre": [
+        "Afropop",
+        "Afrobeat"
+      ],
+      "years_active": "~2017–Present",
+      "biography": "Blanche Bailly is a successful Cameroonian Afro-pop artist and songwriter. She is noted for infusing French, English, and Pidgin into her work, showcasing a diversity of style that has helped her build a global fanbase. Her strong melodies and creativity define her sound.",
+      "spotify_artist_link": "https://open.spotify.com/artist/1256215662",
+      "songs": [
+        {
+          "title": "Mimbayeur (feat. Mink's)",
+          "url": "https://youtu.be/H1lBkyLASX0?si=7LThReOJoqNTi41H"
+        },
+        {
+          "title": "Argent",
+          "url": "https://youtu.be/-qMoMTnxRno?si=cIH8qDfXyjSgkQ9a"
+        },
+        {
+          "title": "Dieu Donné",
+          "url": "https://youtu.be/Mtf5_VAtt50?si=AeUNVH4r6flhtIMt"
+        },
+        {
+          "title": "Mes Respects",
+          "url": "https://youtu.be/lkt-cC23e_c?si=39fBWrLlcYtzHsl1"
+        },
+        {
+          "title": "BonBon",
+          "url": "https://youtu.be/J-ORW55NSEc?si=-uGJKcsTLmBnftN4"
+        },
+        {
+          "title": "Dinguo",
+          "url": "https://youtu.be/tMlKUykCV5I?si=uGwGamfFoNJ8zFue"
+        },
+        {
+          "title": "Jaloux",
+          "url": "https://youtu.be/n6BxXYhlLZ8?si=xFMXo5jIwlq5XoaJ"
+        },
+        {
+          "title": "Dou Dou",
+          "url": "https://youtu.be/dIpakggtzxs?si=59ea-gwjJpb3Bv02"
+        },
+        {
+          "title": "Kossa Generation",
+          "url": "https://youtu.be/zaRLCwA5o90?si=UkNVUC1NtvibxbSu"
+        },
+        {
+          "title": "Superwoman (feat. Josey)",
+          "url": "https://youtu.be/Sznb07wdSIM?si=uCGEsCEXcpa7vBGW"
+        }
+      ]
+    },
+    {
+      "name": "Salatiel",
+      "region": "Not Specified",
+      "genre": [
+        "Afrobeats",
+        "Pop",
+        "Producer"
+      ],
+      "years_active": "2010–Present",
+      "biography": "Salatiel is a celebrated pianist, drummer, singer, songwriter, and producer. He co-founded the group 'Da Thrill' in 2010, winning the Nescafé African Revelations competition. He founded Alpha Better Records in 2014 and has produced hits for top Cameroonian artists. His global profile rose significantly after his collaboration with Beyoncé and Pharrell Williams on 'Water'.",
+      "spotify_artist_link": "https://open.spotify.com/artist/9913990",
+      "songs": [
+        {
+          "title": "Anita",
+          "url": "https://youtu.be/OYagB3K-9co?si=uwT9Hb-I8l7oIMxp"
+        },
+        {
+          "title": "Weekend",
+          "url": "https://youtu.be/YabNOMRSezk?si=PpR8l4ZjuvFnV07g"
+        },
+        {
+          "title": "Toi & Moi",
+          "url": "https://youtu.be/SSY30QOLUIw?si=Qmx2-EDe11gsFt08"
+        },
+        {
+          "title": "Ayagayo (Good Times)",
+          "url": "https://youtu.be/R-djmohFDmA?si=wa1C6VHrJmb0ap0E"
+        },
+        {
+          "title": "Comme Ça (feat. Daphne)",
+          "url": "https://youtu.be/qqRzgOwNf3Y?si=b-_leSswOjIZNp_b"
+        },
+        {
+          "title": "Water (with Beyoncé & Pharrell Williams)",
+          "url": "https://youtu.be/essike_sirI?si=u-sRMViuSsr3FRJR"
+        },
+        {
+          "title": "Touche Pas (Anita 2)",
+          "url": "https://youtu.be/QMJTafbSO-M?si=-PRPATSwkgZBsJxr"
+        },
+        {
+          "title": "Good Girl",
+          "url": "https://youtu.be/N9urmgqWyBU?si=mEX1OYt901miCh-2"
+        },
+        {
+          "title": "Closer (feat. Charlotte Dipanda)",
+          "url": "https://youtu.be/8xWL-CGlQNo?si=zyfhhMYzfgJ-Ic89"
+        },
+        {
+          "title": "Pele (feat. Petit Pays)",
+          "url": "https://youtu.be/6WaVRwhCeyk?si=3uu1CEMLRSMxw6pT"
+        }
+      ]
+    }
+  ],
+  "movies_people": [
+    {
+      "name": "Syndy Emade",
+      "role": "Actress / Producer",
+      "years_active": "2010–Present",
+      "biography": "Elone Syndy Emade is a Cameroonian actress, model, and movie producer. She is the founder of Blue Rain Entertainment. She gained fame with the film 'A Man for the Weekend' featuring Nollywood star Alexx Ekubo and has produced several award-winning movies.",
+      "movies": [
+        "A Man for the Weekend",
+        "Half Heaven",
+        "Bad Angel",
+        "Soldier's Wife",
+        "Rose on the Grave"
+      ]
+    },
+    {
+      "name": "Epule Jeffrey",
+      "role": "Actor",
+      "years_active": "2012–Present",
+      "biography": "Prominent Cameroonian actor known for extensive work in Collywood and Nollywood crossovers. He won Best Male Actor at the 2012 Cameroon Entertainment Award for 'Decoded.' Known for roles in films like 'Breach of Trust' and 'Royal destination'.",
+      "movies": [
+        "Breach of Trust",
+        "Decoded",
+        "Royal Destination",
+        "Virgin Blade",
+        "The African Guest"
+      ]
+    },
+    {
+      "name": "Lucie Memba",
+      "role": "Actress / Producer",
+      "years_active": "1999–Present",
+      "biography": "Veteran actress and producer who began her career in 1999. She founded L.M.B Production in 2014. She is recognized for her role in, and co-production of, the war film 'La patrie d'abord.' She is a recipient of the Cameroon Movies Merit Award.",
+      "movies": [
+        "La Patrie d'abord",
+        "Le Blanc d'Eyenga 2",
+        "Fast Life",
+        "Pink Poison",
+        "W.A.K.A"
+      ]
+    }
+  ],
+  "comedians": [
+    {
+      "name": "Capees Comedy",
+      "style": "Sitcom / Skits",
+      "genre": [
+        "Comedy",
+        "Drama"
+      ],
+      "years_active": "~2015–Present",
+      "social_media_link": "https://youtube.com/@capeescomedyworld?si=R1C5i2HXX4QdBS2S",
+      "comedies": [
+        {
+          "title": "HOME TEACHERS",
+          "url": "https://youtu.be/BD0C8qrN8fs?si=MPYB79m65kp6Ge0T"
+        },
+        {
+          "title": "HOW U GO DENY CHOP FOR DREAM IN THIS ECONOMY",
+          "url": "https://youtu.be/yezRB-Yas_4?si=YCNcJpIlFNKgiQlQ"
+        },
+        {
+          "title": "Kwacoco Go Sweet So?",
+          "url": "https://youtu.be/bOq7hLMGBLU?si=LkmNzluMHNAVBL2r"
+        },
+        {
+          "title": "BAD DEBT",
+          "url": "https://youtu.be/zJ0rUDJdboU?si=Suash-UD6QlQY1ye"
+        },
+        {
+          "title": "Toilet PALAVA",
+          "url": "https://youtu.be/MdTqdik77OM?si=AwyHtx0wdhgQ8cYm"
+        },
+        {
+          "title": "DUBAI DELIVERY AGENTS",
+          "url": "https://youtu.be/ppRHyYikyJw?si=j3db4oMcORiQAKw6"
+        },
+        {
+          "title": "Monono don reach quarter head",
+          "url": "https://youtu.be/tL75fXr2Bco?si=_PCJS_qD0GdKpBBj"
+        },
+        {
+          "title": "Palava GCE ",
+          "url": "https://youtu.be/ouVEpmkCaKA?si=fdjkKiJPxPzt_hZz"
+        },
+        {
+          "title": "Birthday Cooking",
+          "url": "https://youtu.be/Odv1cDPn-Qc?si=3pWfJaPP_tLXAFGA"
+        },
+        {
+          "title": "Woman Eye Ft Ko-C",
+          "url": "https://youtu.be/BPzgB1XrZZk?si=GVnbWNY0Bm6tUjXT"
+        }
+      ]
+    },
+    {
+      "name": "Ulrich Takam",
+      "style": "Stand-up / Parody Skits / Theatre",
+      "languages": [
+        "French",
+        "Pidgin"
+      ],
+      "years_active": "~2016–Present",
+      "social_media_link": "www.youtube.com/@UlrichTakamOfficiel",
+      "comedies": [
+        {
+          "title": "Les Parodies De Takam - Les Paresseux",
+          "url": "https://www.youtube.com/watch?v=wPsFxy-Bo98"
+        },
+        {
+          "title": "Le chef chantier ft La legende & Echu",
+          "url": "https://www.youtube.com/watch?v=lSDOiz3eyFg"
+        },
+        {
+          "title": "Les Capsules De Takam, Cap 2 , le dragueur mytho",
+          "url": "https://www.youtube.com/watch?v=lSDOiz3eyFg"
+        },
+        {
+          "title": "ULRICH TAKAM BEST OF de son premier spectacle",
+          "url": "https://www.youtube.com/watch?v=AErf2vqmpwA"
+        },
+        {
+          "title": "Les Delires De Takam (Episode 15) - Gaz + Rupture",
+          "url": "https://www.youtube.com/watch?v=r0nCi9zT8sQ"
+        },
+        {
+          "title": "Best Dance Battle (Auntie Felicia VS CDA)",
+          "url": "https://www.youtube.com/watch?v=78_-c08dTeg"
+        },
+        {
+          "title": "Les Parodies de Takam - Good Day (Fire)",
+          "url": "https://www.youtube.com/watch?v=Y4OHBpT-PPU"
+        },
+        {
+          "title": "Les Parodies de Takam - Patronne",
+          "url": "https://www.youtube.com/watch?v=zTtzO7KI-PY"
+        },
+        {
+          "title": "L'élève international",
+          "url": "https://www.youtube.com/watch?v=E_l_e_v_e_I_n"
+        },
+        {
+          "title": "Le parlement du rire",
+          "url": "https://www.youtube.com/watch?v=P_a_r_l_e_m_e"
+        }
+      ]
+    },
+    {
+      "name": "Auntie Felicia (Cynthia Elizabeth Gbeboh)",
+      "style": "Sketch / Social Satire / Online Comedy",
+      "languages": [
+        "Pidgin",
+        "English"
+      ],
+      "years_active": "~2015–Present",
+      "social_media_link": "https://www.youtube.com/@auntiefelicia1098",
+      "comedies": [
+        {
+          "title": "Do Me, I do you episode 1",
+          "url": "https://www.youtube.com/watch?v=jIch0nN3tSo"
+        },
+        {
+          "title": "Afro-Brains Ft Dorcas",
+          "url": "https://www.youtube.com/watch?v=O3lMobo4ARU"
+        },
+        {
+          "title": "Lady Felicia (Posh Beauty)",
+          "url": "https://www.youtube.com/watch?v=eet6k93CfP8"
+        },
+        {
+          "title": "Comedian way e networth na 750 million",
+          "url": "https://www.youtube.com/watch?v=h8x0B0oH9dE"
+        },
+        {
+          "title": "My take on Anglophone elite",
+          "url": "https://www.youtube.com/watch?v=eet6k93CfP8"
+        },
+        {
+          "title": "Auntie Feli don accept Christ",
+          "url": "https://www.youtube.com/watch?v=udKB6z0skZ0"
+        },
+        {
+          "title": "Faithful Husband ft Auntie Felicia",
+          "url": "https://www.youtube.com/watch?v=lX9Wbv8Pyfk"
+        },
+        {
+          "title": "This caro and e massa",
+          "url": "https://www.youtube.com/watch?v=C_a_r_o_M_a_s"
+        },
+        {
+          "title": "Hospital Gossip",
+          "url": "https://www.youtube.com/watch?v=H_o_s_p_i_t_a"
+        },
+        {
+          "title": "BBL",
+          "url": "https://www.youtube.com/watch?v=B_B_L_1_1_1_1"
+        }
+      ]
+    }
+  ],
+  "other_cultural_activities": [
+    {
+      "name": "Nyem-Nyem Festival",
+      "region": "Adamawa Region (Tibati)",
+      "description": "A historical festival commemorating the resistance of the Nyem-Nyem people against German colonization. Features war dances, traditional reenactments, and displays of warrior attire.",
+      "time_of_year": "July"
+    },
+    {
+      "name": "Festi-Beti (Festival of the Beti People)",
+      "region": "Centre Region (Yaoundé)",
+      "description": "A celebration of the Fang-Beti culture featuring traditional Bikutsi music, dance, cuisine, and rites. It aims to promote social cohesion and the rich heritage of the Beti clans.",
+      "time_of_year": "Varies (often mid-year or December)"
+    },
+    {
+      "name": "Baka Cultural Festival (Jengi)",
+      "region": "East Region (Forest Reserves)",
+      "description": "Centered around the Baka Pygmy communities, this festival celebrates their symbiotic relationship with the forest. Highlights include the sacred 'Jengi' spirit dance, polyphonic singing, and traditional hunting rituals.",
+      "time_of_year": "Varies (often associated with forest seasons)"
+    },
+    {
+      "name": "Sahel Cultural Festival",
+      "region": "Far North Region (Maroua)",
+      "description": "A vibrant showcase of the Sahelian cultures, featuring Fantasia (horse parades), traditional architecture exhibitions, and crafts from the Peul, Mafa, and Kirdi peoples.",
+      "time_of_year": "January"
+    },
+    {
+      "name": "Ngondo Festival",
+      "region": "Littoral Region (Douala)",
+      "description": "A sacred festival of the Sawa (coastal) peoples held on the banks of the Wouri River. It involves communication with the water spirits (Miengu), canoe races, and traditional wrestling.",
+      "time_of_year": "December"
+    },
+    {
+      "name": "Fantasia (Demsa)",
+      "region": "North Region (Demsa/Garoua)",
+      "description": "A spectacular display of equestrian skills and tradition. The Lamido (traditional ruler) leads a procession of richly dressed horsemen. It includes the 'Gourna' dance and warrior displays.",
+      "time_of_year": "Often during major Islamic holidays or cultural weeks"
+    },
+    {
+      "name": "Lela Festival",
+      "region": "Northwest Region (Bali Nyonga)",
+      "description": "An annual festival of the Bali Nyonga people commemorating their history and military victories. Key features include the 'Lela' dance, gunfire salutes, and the display of sacred flags.",
+      "time_of_year": "December"
+    },
+    {
+      "name": "Mayi Festival",
+      "region": "South Region (Kribi)",
+      "description": "Celebrated by the Batanga people to commemorate the return of their ancestors from exile. It takes place on the beach with rituals, feasting, and traditional dances.",
+      "time_of_year": "May 9th"
+    },
+    {
+      "name": "Buea Annual Cultural Festival",
+      "region": "Southwest Region (Buea)",
+      "description": "Showcases the culture of the Bakweri people of Mount Cameroon (Fako). Features the 'Elephant Dance' (Malle), wrestling, and choral music, often coinciding with the Mount Cameroon Race of Hope.",
+      "time_of_year": "February/March"
+    },
+    {
+      "name": "Nguon Festival",
+      "region": "West Region (Foumban)",
+      "description": "A biennial festival of the Bamoun Kingdom dating back centuries. It serves as a forum for the people to judge the Sultan's rule, featuring colorful parades, traditional justice ceremonies, and exhibition of royal artifacts.",
+      "time_of_year": "December (Biennial)"
+    }
+  ],
+  "tourist_sites": [
+    {
+      "name": "Ekom-Nkam Waterfalls",
+      "type": "Waterfall",
+      "image": "https://en.wikivoyage.org/wiki/File:Chutes_Ekom_Nkam_Melong_04_(banner).jpg",
+      "location": "Nkongsamba, Littoral Region",
+      "history": "Sacred to local communities and internationally known after featuring in Tarzan films in the 1980s."
+    },
+    {
+      "name": "Lobé Waterfalls",
+      "type": "Waterfall",
+      "image": "https://whc.unesco.org/include/tool_image_bootstrap.cfm?id=192071",
+      "location": "Kribi, South Region",
+      "history": "One of the rare waterfalls flowing directly into the Atlantic Ocean, sacred to Batanga people.",
+      "loction_url": "https://share.google/AcstXZj6M27kHAXxL"
+    },
+    {
+      "name": "Mount Cameroon",
+      "type": "Mountain in Cameroon",
+      "image": "https://en.wikipedia.org/wiki/File:Mount_Cameroon_view_from_Buea_(Soppo).jpg",
+      "location": "Southwest Region",
+      "history": "Active volcano and highest mountain in West and Central Africa.",
+      "loction_url": "https://share.google/wgIKaRyd1KcA3WV7i"
+    },
+    {
+      "name": "Lake Nyos",
+      "type": "Natural Place",
+      "image": "https://en.wikipedia.org/wiki/File:Nyos_Lake.jpg",
+      "location": "Northwest Region",
+      "history": "Known for the 1986 limnic eruption that released carbon dioxide."
+    },
+    {
+      "name": "Foumban Royal Palace",
+      "type": "Monument",
+      "image": "https://en.wikipedia.org/wiki/File:Bamun_sultan_palace.jpg",
+      "location": "Foumban, West Region",
+      "history": "Built in 1917 by Sultan Ibrahim Njoya, seat of the Bamoun Kingdom.",
+      "location_url": "https://share.google/jcTabSAh6b4Tm0FS6"
+    },
+    {
+      "name": "Korup National Park",
+      "type": "Park",
+      "image": "https://en.wikipedia.org/wiki/File:Mana_suspension_bridge_over_Mana_river.JPG",
+      "location": "Southwest Region",
+      "history": "One of Africa’s oldest rainforests, extremely rich in biodiversity.",
+      "loction_url": "https://share.google/HJE4DNz9Hf2OhjmFB"
+    },
+    {
+      "name": "Bakossi National Park",
+      "type": "Park",
+      "image": "https://www.globalnationalparks.com/wp-content/uploads/national-park-bakossi-1-1024x576.jpg",
+      "location": "Southwest Region",
+      "history": "Created to protect endemic species and mountainous ecosystems.",
+      "location_url": "https://share.google/wgIKaRyd1KcA3WV7i"
+    },
+    {
+      "name": "Mount Manengouba",
+      "type": "Mountain in Cameroon",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Mont-Manengouba_01.jpg/500px-Mont-Manengouba_01.jpg",
+      "location": "West / Littoral Regions",
+      "history": "Volcanic massif with twin crater lakes and local legends.",
+      "location_url": "https://share.google/jlsDneJW4vk4vNVUq"
+    },
+    {
+      "name": "Benoué National Park",
+      "type": "Park",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/B%C3%A9nou%C3%A9NP.jpg/500px-B%C3%A9nou%C3%A9NP.jpg",
+      "location": "North Region",
+      "history": "Savannah park protecting wildlife such as antelope and lions.",
+      "location_url": "https://share.google/C1lb9eeq650LrqY8R"
+    },
+    {
+      "name": "Lake Lagdo",
+      "type": "Reservoir in Cameroon",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Lagdo_Dam.jpg/500px-Lagdo_Dam.jpg",
+      "location": "North Region",
+      "history": "Hydroelectric dam supplying electricity to northern Cameroon.",
+      "location_url": "https://share.google/OLatRkcO1010DzhUk"
+    },
+    {
+      "name": "Reunification Monument",
+      "type": "Monument",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Monument_Reunification_2.jpg/960px-Monument_Reunification_2.jpg",
+      "location": "Yaoundé, Centre Region",
+      "history": "Commemorates the reunification of Cameroon in 1961.",
+      "location_url": "https://share.google/uYjfpOfDCNXJUk6Q1"
+    },
+    {
+      "name": "Campo Ma’an National Park",
+      "type": "Park",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Mus%C3%A9e_de_l%27arbre.jpg/500px-Mus%C3%A9e_de_l%27arbre.jpg",
+      "location": "South Region",
+      "history": "Dense rainforest park with coastal ecosystems.",
+      "location_url": "https://share.google/xAeNvUs2FPJa4naMo"
+    },
+    {
+      "name": "Dja Faunal Reserve",
+      "type": "Park",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Dja_River_and_pirogue.JPG/500px-Dja_River_and_pirogue.JPG",
+      "location": "South-East Cameroon",
+      "history": "UNESCO World Heritage Site protecting vast rainforest.",
+      "location_url": "https://share.google/zJZmXCIgslTJa4GrT"
+    },
+    {
+      "name": "Limbe Botanical Garden",
+      "type": "Botanic Garden in Cameroon",
+      "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Entr%C3%A9e_du_jardin.jpg/500px-Entr%C3%A9e_du_jardin.jpg",
+      "location": "Limbe, Southwest Region",
+      "history": "Established by Germans in 1892 for tropical plant research.",
+      "location_url": "https://share.google/JYS9zSM9ieffNYAQv"
+    },
+    {
+      "name": "Bafut Palace",
+      "type": "Monument",
+      "image": "https://lh3.googleusercontent.com/gps-cs-s/AG0ilSwhMrmCBAf4TzQ7I92I02f_G-nQZMgEDI4tpvt1ZCJuNM5cSc8IA7wMvq54cFyZgXByqAM2l6EQoiePWaMU5c37nGLUE42p1Aox_En-CVoJQxFuolpn6eEwcSyunG7QieZ4IzmL=s1360-w1360-h1020-rw",
+      "location": "Northwest Region",
+      "history": "Traditional palace of the Bafut Fon.",
+      "location_url": "https://share.google/aLsldt14erZWfXkrX"
+    }
+  ]
+}

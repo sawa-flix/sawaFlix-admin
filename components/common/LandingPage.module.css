@@ -1,0 +1,131 @@
+.container {
+  background-color: #000;
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: "Poppins", sans-serif;
+  padding-top: 1rem;
+}
+
+/* Navbar */
+.navbar ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+.navbar li {
+  cursor: pointer;
+  opacity: 0.8;
+}
+.navbar .active {
+  color: #00ff66;
+  opacity: 1;
+}
+
+/* Image Rows */
+.container {
+  background-color: #000;
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: "Poppins", sans-serif;
+  padding-top: 1rem;
+}
+
+/* Navbar */
+.navbar ul {
+  list-style: none;
+  display: flex;
+  gap: 1rem;
+  padding: 0;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+.navbar li {
+  cursor: pointer;
+  opacity: 0.8;
+}
+.navbar .active {
+  color: #00ff66;
+  opacity: 1;
+}
+
+/* Image Rows */
+.imageRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1.2rem;
+}
+.imageBox {
+  position: relative;
+  width: 140px;
+  height: 200px; /* portrait shape */
+  border-radius: 20px;
+  overflow: hidden;
+}
+.imageBox img {
+  object-fit: cover;
+}
+
+/* Tint Effects */
+.green img {
+  filter: brightness(0.85) sepia(1) hue-rotate(100deg) saturate(3);
+}
+.yellow img {
+  filter: brightness(0.9) sepia(1) hue-rotate(50deg) saturate(3);
+}
+.orange img {
+  filter: brightness(0.9) sepia(1) hue-rotate(20deg) saturate(3);
+}
+.red img {
+  filter: brightness(0.85) sepia(1) hue-rotate(-20deg) saturate(3);
+}
+
+/* Text Section at Center */
+.textSection {
+  text-align: center;
+  padding: 0 1rem;
+  margin-bottom: 1.2rem;
+}
+.textSection h1 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+.textSection p {
+  font-size: 0.9rem;
+  color: #bbb;
+  margin-bottom: 1.2rem;
+}
+.cta {
+  background-color: #00ff66;
+  border: none;
+  padding: 0.8rem 1.6rem;
+  color: black;
+  font-weight: bold;
+  font-size: 1rem;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+.cta:hover {
+  background-color: #00cc55;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 480px) {
+  .imageBox {
+    width: 120px;
+    height: 170px;
+  }
+  .textSection h1 {
+    font-size: 1.5rem;
+  }
+}
