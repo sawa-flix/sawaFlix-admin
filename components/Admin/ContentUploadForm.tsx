@@ -170,10 +170,10 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
       )}
 
       <div className="space-y-6">
-        {/* 1. YouTube URL input */}
+        {/* 1. Content URL input */}
         <div>
           <label className="block text-sm font-semibold text-gray-300 mb-2">
-            1. YouTube URL <span className="text-red-500">*</span>
+            1. Content URL <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <input
@@ -191,9 +191,6 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
               )}
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1.5">
-            URLs are auto-validated and auto-fetch metadata quota-free from YouTube's oEmbed API.
-          </p>
         </div>
 
         {/* oEmbed Autofill Preview */}
