@@ -34,7 +34,10 @@ export interface AdminContent {
   source_type: 'admin';
 }
 
+// Main sawaflix-backend (feed etc.)
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
+// Admin-specific backend (verifications, upload, content management)
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'https://sawaflix-admin-backend.onrender.com';
 const supabase = createClient();
 
 const getAuthHeaders = async () => {
@@ -53,7 +56,7 @@ const getAuthHeaders = async () => {
 export async function getArtistsDirectory(query?: string): Promise<Artist[]> {
     try {
         const headers = await getAuthHeaders();
-        const url = new URL(`${API_URL}/api/admin/artists/search`);
+        const url = new URL(`${ADMIN_API_URL}/api/admin/artists/search`);
         if (query) url.searchParams.append('q', query);
         
         const res = await fetch(url.toString(), { headers });
@@ -76,9 +79,9 @@ export async function getTopArtists(): Promise<TopArtist[]> {
         // The backend dev didn't explicitly list a GET for top-artists in the screenshot,
         // but typically a PUT is paired with a GET on the same route or a public route.
         // We will try the admin route first.
-        const res = await fetch(`${API_URL}/api/admin/top-artists`, { headers });
+        const res = await fetch(`${ADMIN_API_URL}/api/admin/top-artists`, { headers });
         if (!res.ok) {
-            console.warn(`[API] getTopArtists returned ${res.status}. If 404, tell backend dev to add GET /api/admin/top-artists`);
+            console.warn(`[API] getTopArtists returned ${res.status}.`);
             return [];
         }
         const data = await res.json();
@@ -101,7 +104,7 @@ export async function saveTopArtists(list: TopArtist[]): Promise<boolean> {
     }));
 
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/api/admin/top-artists`, {
+    const res = await fetch(`${ADMIN_API_URL}/api/admin/top-artists`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ top_artists: updated }) // Wrap in object or send direct depending on backend preference
@@ -143,7 +146,7 @@ export async function addArtistToTop20(artistId: string): Promise<boolean> {
 export async function getAdminContent(): Promise<AdminContent[]> {
     try {
         const headers = await getAuthHeaders();
-        const res = await fetch(`${API_URL}/api/admin/content`, { headers });
+        const res = await fetch(`${ADMIN_API_URL}/api/admin/content`, { headers });
         if (!res.ok) {
             console.warn(`[API] getAdminContent returned ${res.status}`);
             return [];
@@ -178,7 +181,7 @@ export async function saveAdminContent(content: Omit<AdminContent, 'id' | 'creat
         delete payload.artist_id;
     }
 
-    const res = await fetch(`${API_URL}/api/admin/content`, {
+    const res = await fetch(`${ADMIN_API_URL}/api/admin/content`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload)
@@ -201,7 +204,7 @@ export async function saveAdminContent(content: Omit<AdminContent, 'id' | 'creat
 
 export async function deleteAdminContent(id: string): Promise<boolean> {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/api/admin/content/${id}`, {
+    const res = await fetch(`${ADMIN_API_URL}/api/admin/content/${id}`, {
         method: 'DELETE',
         headers
     });
@@ -248,4 +251,40 @@ export async function getHistoryLog(): Promise<any[]> {
     // Return empty history if we are no longer tracking this locally.
     // The backend would need a history endpoint if you want to keep this feature.
     return [];
+}
+
+// -------------------------------------------------------------
+// Native Video Upload (Admin Backend API)
+// -------------------------------------------------------------
+
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'http://localhost:3001';
+
+export async function presignAdminUpload(filename: string, contentType: string) {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${ADMIN_API_URL}/api/admin/upload/presign`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ filename, contentType })
+    });
+
+    if (!res.ok) {
+        throw new Error(`Failed to generate presigned URL (Status: ${res.status})`);
+    }
+
+    return res.json();
+}
+
+export async function confirmAdminUpload(videoId: string, metadata: any) {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${ADMIN_API_URL}/api/admin/upload/confirm/${videoId}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(metadata)
+    });
+
+    if (!res.ok) {
+        throw new Error(`Failed to confirm upload (Status: ${res.status})`);
+    }
+
+    return res.json();
 }
