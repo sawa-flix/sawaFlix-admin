@@ -257,7 +257,7 @@ export async function getHistoryLog(): Promise<any[]> {
 // Native Video Upload (Admin Backend API)
 // -------------------------------------------------------------
 
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'http://localhost:3001';
+
 
 export async function presignAdminUpload(filename: string, contentType: string) {
     const headers = await getAuthHeaders();
