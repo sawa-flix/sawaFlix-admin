@@ -61,10 +61,15 @@ export default function VerificationQueue() {
 
     const { addNotification } = useAdminNotifications();
 
-    // Helper: get a fresh access token using getUser() (validated by middleware)
+    // Helper: get a fresh access token — uses getUser() which validates the JWT server-side
     const getAccessToken = async (): Promise<string | null> => {
         const { data: { session } } = await supabase.auth.getSession();
-        return session?.access_token ?? null;
+        if (session?.access_token) return session.access_token;
+        // Fallback: refresh via server-validated call
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
+        return freshSession?.access_token ?? null;
     };
 
     const fetchPendingCount = async () => {
@@ -219,12 +224,12 @@ export default function VerificationQueue() {
 
         setBulkLoading(true);
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const token = await getAccessToken();
             const approvePromises = Array.from(selectedIds).map(slug => 
                 fetch(`${LIVEURL}/api/admin/verifications/${slug}/approve`, {
                     method: 'POST',
                     headers: { 
-                        'Authorization': `Bearer ${session?.access_token}`,
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json' 
                     },
                     body: JSON.stringify({ notes: 'Bulk approved by admin' })

@@ -1,38 +1,35 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server'
+import { updateSession } from './utils/supabase/middleware'
 
-export async function middleware(request: NextRequest) {
-    let supabaseResponse = NextResponse.next({ request });
+export default async function middleware(request: NextRequest) {
+  // Skip PWA static files — never redirect these
+  const pathname = request.nextUrl.pathname;
+  if (
+    pathname === '/manifest.json' ||
+    pathname === '/sw.js' ||
+    pathname.startsWith('/icons/')
+  ) {
+    return NextResponse.next();
+  }
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() {
-                    return request.cookies.getAll();
-                },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-                    supabaseResponse = NextResponse.next({ request });
-                    cookiesToSet.forEach(({ name, value, options }) =>
-                        supabaseResponse.cookies.set(name, value, options)
-                    );
-                },
-            },
-        }
-    );
-
-    // IMPORTANT: This call refreshes the session cookie on every request
-    // Without this, the session will expire and users get logged out unexpectedly
-    await supabase.auth.getUser();
-
-    return supabaseResponse;
+  try {
+    return await updateSession(request);
+  } catch (error) {
+    console.error('Middleware auth error:', error);
+    return NextResponse.next();
+  }
 }
 
 export const config = {
-    matcher: [
-        // Run middleware on all routes EXCEPT static files and _next internals
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    ],
-};
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api/ (API routes)
+     * - manifest.json, sw.js, icons/ (PWA files)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|manifest\\.json|sw\\.js|icons|login|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm)$).*)',
+  ],
+}

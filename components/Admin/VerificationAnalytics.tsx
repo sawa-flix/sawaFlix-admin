@@ -44,10 +44,20 @@ export default function VerificationAnalytics() {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
+      // getUser() validates the JWT server-side — safer than getSession() which reads local cache
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+        if (!user || userError) {
+          setError("Not authenticated. Please log in.");
+          setLoading(false);
+          return;
+        }
+
+        // getSession() is fine here — user is already validated above, we just need the token
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
-          setError("Not authenticated. Please log in.");
+          setError("Session unavailable. Please log in.");
           setLoading(false);
           return;
         }

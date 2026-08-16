@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "daisyui";
 
 :root {
   --background: #0B0E14;
@@ -7,6 +8,10 @@
   --secondary: #1E293B;
   --accent: #E50914;
   --card-bg: #151C25;
+
+  /* Force DaisyUI to use our Netflix-like red as the primary color globally */
+  --color-primary: #E50914 !important;
+  --color-primary-content: #ffffff !important;
 }
 
 @theme {

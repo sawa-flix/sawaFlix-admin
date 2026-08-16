@@ -116,6 +116,13 @@ export default function VerificationDetails({ id }: { id: string }) {
             setLoading(true);
             setError('');
             try {
+                // Validate JWT server-side before using the token
+                const { data: { user: authUser } } = await supabase.auth.getUser();
+                if (!authUser) {
+                    setError('Not authenticated. Please log in.');
+                    setLoading(false);
+                    return;
+                }
                 const { data: { session } } = await supabase.auth.getSession();
                 const headers = {
                     'Authorization': `Bearer ${session?.access_token}`,
@@ -171,9 +178,11 @@ export default function VerificationDetails({ id }: { id: string }) {
         setActionLoading(true);
 
         try {
+            // Validate JWT server-side before using the token
+            const { data: { user: authUser } } = await supabase.auth.getUser();
             const { data: { session } } = await supabase.auth.getSession();
             
-            if (!session) {
+            if (!authUser || !session) {
                 console.warn('No auth session available for verification action');
                 window.location.href = '/login';
                 return;

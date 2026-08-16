@@ -34,7 +34,7 @@ const AdminHeader = ({ sidebarOpen, toggleSidebar }: { sidebarOpen: boolean; tog
           .from('users')
           .select('username, email, profile_image_url')
           .eq('id', user.id)
-          .single<UserProfileData>();
+          .maybeSingle<UserProfileData>();
 
         if (error) {
           console.error('Error fetching user profile:', error.message);
