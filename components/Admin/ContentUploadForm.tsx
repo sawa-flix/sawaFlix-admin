@@ -1,17 +1,18 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   fetchOEmbed, 
-  saveAdminContent
+  saveAdminContent,
+  presignAdminUpload,
+  confirmAdminUpload
 } from '@/services/adminContentService';
 import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { 
   Youtube, 
   FileVideo, 
-  Sparkles, 
+  UploadCloud,
   Check, 
-  AlertCircle, 
   Loader2, 
   MapPin, 
   Tags,
@@ -19,22 +20,17 @@ import {
 } from 'lucide-react';
 
 const REGIONS = [
-  'National',
-  'Douala',
-  'Yaoundé',
-  'Bamenda',
-  'Garoua',
-  'Bafoussam',
-  'Limbe',
-  'Buea',
-  'Maroua',
-  'Ngaoundéré',
-  'Kumba'
+  'National', 'Douala', 'Yaoundé', 'Bamenda', 'Garoua', 
+  'Bafoussam', 'Limbe', 'Buea', 'Maroua', 'Ngaoundéré', 'Kumba'
 ];
 
 export default function ContentUploadForm({ onSaved }: { onSaved?: () => void }) {
+  // Toggle State
+  const [uploadType, setUploadType] = useState<'youtube' | 'native'>('youtube');
+
   // Form State
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<'Music' | 'Video' | 'Comedy' | 'Documentary'>('Music');
   const [genre, setGenre] = useState('');
@@ -55,15 +51,12 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
 
   const { addNotification } = useAdminNotifications();
 
-
-  // Validate YouTube URL format
   const getYouTubeId = (url: string) => {
-    const regExp = /^^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|embed\/|v\/)?([a-zA-Z0-9_-]{11})/;
+    const regExp = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/(watch\?v=|embed\/|v\/)?([a-zA-Z0-9_-]{11})/;
     const match = url.match(regExp);
     return match ? match[5] : null;
   };
 
-  // Auto-fetch oEmbed on paste/change
   const handleUrlChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setYoutubeUrl(val);
@@ -89,15 +82,19 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setVideoFile(file);
+      setTitle(file.name.split('.')[0]); // auto-fill title
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (status: 'draft' | 'published') => {
     setError(null);
     setSuccess(false);
 
-    // Validations
-    if (!youtubeUrl || !getYouTubeId(youtubeUrl)) {
-      setError('Please provide a valid YouTube URL.');
-      return;
-    }
     if (!title.trim()) {
       setError('Please specify a title.');
       return;
@@ -107,41 +104,88 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
       return;
     }
 
-    setSaving(true);
-    try {
+    if (uploadType === 'youtube') {
+      if (!youtubeUrl || !getYouTubeId(youtubeUrl)) {
+        setError('Please provide a valid YouTube URL.');
+        return;
+      }
       
-      await saveAdminContent({
-        artist_id: '', // Artist is automatically resolved via YouTube author name
-        youtube_url: youtubeUrl,
-        title: title,
-        thumbnail_url: youtubePreview?.thumbnail_url || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&h=180&fit=crop',
-        author_name: youtubePreview?.author_name || 'Admin Curated',
-        category,
-        genre,
-        region,
-        status
-      });
+      setSaving(true);
+      try {
+        await saveAdminContent({
+          youtube_url: youtubeUrl,
+          title,
+          thumbnail_url: youtubePreview?.thumbnail_url || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&h=180&fit=crop',
+          author_name: youtubePreview?.author_name || 'Admin Curated',
+          category,
+          genre,
+          region,
+          status
+        });
+        finishSubmit(status);
+      } catch (err: any) {
+        setError(err.message || 'Failed to save content.');
+        setSaving(false);
+      }
 
-      setSuccess(true);
-      addNotification({
-        type: 'approved',
-        title: status === 'published' ? 'Content Published Successfully' : 'Draft Saved Successfully',
-        message: `"${title}" has been successfully added to Sawaflix pipelines.`
-      });
+    } else {
+      // Native File Upload Flow
+      if (!videoFile) {
+        setError('Please select a video file to upload.');
+        return;
+      }
 
-      // Clear Form on success
-      setYoutubeUrl('');
-      setTitle('');
-      setGenre('');
-      setRegion('National');
-      setYoutubePreview(null);
-      
-      if (onSaved) onSaved();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save content.');
-    } finally {
-      setSaving(false);
+      setSaving(true);
+      try {
+        // 1. Get Presigned URL
+        addNotification({ type: 'info', title: 'Upload Starting', message: 'Generating secure upload URL...' });
+        const { videoId, uploadUrl } = await presignAdminUpload(videoFile.name, videoFile.type);
+
+        // 2. Upload direct to Cloudflare R2
+        addNotification({ type: 'info', title: 'Uploading', message: 'Uploading video file to Sawaflix servers...' });
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': videoFile.type },
+          body: videoFile
+        });
+
+        if (!uploadRes.ok) throw new Error('Direct file upload to Cloudflare failed');
+
+        // 3. Confirm metadata
+        await confirmAdminUpload(videoId, {
+          title,
+          category,
+          genre,
+          region,
+          status,
+          source_type: 'native'
+        });
+
+        finishSubmit(status);
+      } catch (err: any) {
+        setError(err.message || 'Upload failed.');
+        setSaving(false);
+      }
     }
+  };
+
+  const finishSubmit = (status: string) => {
+    setSuccess(true);
+    addNotification({
+      type: 'approved',
+      title: status === 'published' ? 'Content Published Successfully' : 'Draft Saved Successfully',
+      message: `"${title}" has been successfully added to Sawaflix.`
+    });
+
+    setYoutubeUrl('');
+    setVideoFile(null);
+    setTitle('');
+    setGenre('');
+    setRegion('National');
+    setYoutubePreview(null);
+    setSaving(false);
+    
+    if (onSaved) onSaved();
   };
 
   return (
@@ -152,10 +196,9 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
         </div>
         <div>
           <h2 className="text-xl font-bold text-white">Upload Curated Content</h2>
-          <p className="text-sm text-gray-400">Curate and publish direct feed videos to Sawaflix</p>
+          <p className="text-sm text-gray-400">Add YouTube links or upload native video files</p>
         </div>
       </div>
-
 
       {success && (
         <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-500 rounded-xl text-sm flex items-start space-x-2">
@@ -163,62 +206,92 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
           <span>Content has been saved successfully!</span>
         </div>
       )}
+      
+      {error && (
+        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl text-sm flex items-start space-x-2">
+          <span className="shrink-0 mt-0.5 font-bold">Error: </span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Upload Type Toggle */}
+      <div className="flex space-x-4 mb-8 bg-gray-950 p-2 rounded-xl">
+        <button
+          onClick={() => { setUploadType('youtube'); setError(null); }}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-all ${
+            uploadType === 'youtube' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <Youtube size={18} />
+          <span>YouTube Link</span>
+        </button>
+        <button
+          onClick={() => { setUploadType('native'); setError(null); }}
+          className={`flex-1 flex items-center justify-center space-x-2 py-3 rounded-lg text-sm font-semibold transition-all ${
+            uploadType === 'native' ? 'bg-red-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          <UploadCloud size={18} />
+          <span>Native Upload</span>
+        </button>
+      </div>
 
       <div className="space-y-6">
-        {/* 1. Content URL input */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-300 mb-2">
-            1. Content URL <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={youtubeUrl}
-              onChange={handleUrlChange}
-              className="w-full bg-gray-950 border border-gray-800 focus:border-red-500 rounded-xl pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
-            />
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-              {oembedLoading ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <Youtube size={18} />
-              )}
+        {/* URL or File Input based on mode */}
+        {uploadType === 'youtube' ? (
+          <div>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              1. YouTube URL <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={youtubeUrl}
+                onChange={handleUrlChange}
+                className="w-full bg-gray-950 border border-gray-800 focus:border-red-500 rounded-xl pl-11 pr-4 py-3 text-white text-sm focus:outline-none focus:ring-1 focus:ring-red-500 transition-all"
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                {oembedLoading ? <Loader2 className="animate-spin" size={18} /> : <Youtube size={18} />}
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* oEmbed Autofill Preview (Discord Style) */}
-        {youtubePreview && (
-          <div className="mt-4 rounded-xl overflow-hidden border border-gray-800 bg-[#1e1f22] max-w-lg shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-             <div className="p-4 border-l-[4px] border-l-[#ff0000] flex flex-col gap-3">
-               <div className="flex items-center gap-1.5 text-xs font-bold text-gray-400">
-                 <Youtube size={16} className="text-[#ff0000]" />
-                 <span>YouTube</span>
-               </div>
-               
-               <div>
-                 <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-[#00a8fc] hover:underline font-bold text-base block mb-1">
-                   {youtubePreview.title}
-                 </a>
-                 <p className="text-xs text-gray-300">
-                   {youtubePreview.author_name}
-                 </p>
-               </div>
-               
-               <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="relative group cursor-pointer w-full max-w-sm rounded-lg overflow-hidden border border-gray-800 mt-2 block">
-                 <img 
-                   src={youtubePreview.thumbnail_url} 
-                   alt="Thumbnail" 
-                   className="w-full h-auto aspect-video object-cover transition-transform duration-500 group-hover:scale-105"
-                 />
-                 <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-14 h-14 bg-[#ff0000] rounded-full flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform duration-300">
-                      <Play className="text-white ml-1 w-6 h-6" fill="currentColor" />
-                    </div>
+            {/* Preview */}
+            {youtubePreview && (
+              <div className="mt-4 rounded-xl overflow-hidden border border-gray-800 bg-[#1e1f22] max-w-lg shadow-2xl">
+                 <div className="p-4 border-l-[4px] border-l-[#ff0000] flex flex-col gap-3">
+                   <div>
+                     <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-[#00a8fc] hover:underline font-bold text-base block mb-1">
+                       {youtubePreview.title}
+                     </a>
+                     <p className="text-xs text-gray-300">{youtubePreview.author_name}</p>
+                   </div>
+                   <img src={youtubePreview.thumbnail_url} alt="Thumbnail" className="w-full h-auto aspect-video object-cover rounded-lg" />
                  </div>
-               </a>
-             </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-semibold text-gray-300 mb-2">
+              1. Select Video File (MP4) <span className="text-red-500">*</span>
+            </label>
+            <div className="w-full bg-gray-950 border border-gray-800 border-dashed hover:border-red-500 rounded-xl px-4 py-8 text-center transition-all">
+               <input
+                 type="file"
+                 accept="video/mp4,video/x-m4v,video/*"
+                 onChange={handleFileChange}
+                 className="hidden"
+                 id="file-upload"
+               />
+               <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center justify-center">
+                 <UploadCloud size={32} className="text-gray-400 mb-3" />
+                 <span className="text-white font-medium bg-gray-800 px-4 py-2 rounded-lg mb-2 hover:bg-gray-700">Browse Files</span>
+                 <span className="text-sm text-gray-500">
+                   {videoFile ? videoFile.name : 'No file selected yet'}
+                 </span>
+               </label>
+            </div>
           </div>
         )}
 
@@ -306,7 +379,7 @@ export default function ContentUploadForm({ onSaved }: { onSaved?: () => void })
             {saving ? (
               <>
                 <Loader2 className="animate-spin" size={16} />
-                <span>Saving...</span>
+                <span>{uploadType === 'native' ? 'Uploading...' : 'Saving...'}</span>
               </>
             ) : (
               <span>Publish Now</span>
