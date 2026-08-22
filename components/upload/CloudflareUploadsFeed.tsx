@@ -14,7 +14,9 @@ import {
   RefreshCw,
   X,
   ShieldCheck,
-  FileVideo
+  FileVideo,
+  Music,
+  Disc
 } from 'lucide-react';
 
 export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigger?: number }) {
@@ -30,8 +32,8 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
-  // Video Modal Player State
-  const [playingVideo, setPlayingVideo] = useState<{ url: string; title: string } | null>(null);
+  // Media Modal Player State (Supports Video & Audio)
+  const [playingMedia, setPlayingMedia] = useState<{ url: string; title: string; isAudio: boolean; thumbnail?: string } | null>(null);
 
   const loadData = async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
@@ -46,7 +48,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       setContentList(contents);
       setArtists(artistsDir);
     } catch (err: any) {
-      console.error("Failed to load Cloudflare uploads:", err);
+      console.error("Failed to load Cloudflare media uploads:", err);
       setErrorMsg(err?.message || "Failed to load uploads securely from backend.");
     } finally {
       setLoading(false);
@@ -69,18 +71,25 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     return url.includes('youtube.com') || url.includes('youtu.be');
   };
 
-  // Filtered & Sorted items - STRICTLY Cloudflare upload video files only
+  // Helper to determine media type
+  const checkIsAudio = (item: AdminContent) => {
+    const mediaUrl = ((item as any).media_url || (item as any).audio_url || (item as any).video_url || (item as any).url || item.youtube_url || '').toLowerCase();
+    const category = (item.category || '').toLowerCase();
+    const isAudioExt = mediaUrl.endsWith('.mp3') || mediaUrl.endsWith('.wav') || mediaUrl.endsWith('.aac') || mediaUrl.endsWith('.flac') || mediaUrl.endsWith('.m4a') || mediaUrl.endsWith('.ogg');
+    return isAudioExt || category === 'music' || category === 'audio' || (item as any).media_type === 'audio';
+  };
+
+  // Filtered & Sorted items - ALL direct media files (audio & video), excluding YouTube links
   const processedItems = useMemo(() => {
-    const cloudflareOnly = contentList.filter(item => {
-      const mediaUrl = (item as any).video_url || (item as any).url || item.youtube_url;
-      // Exclude YouTube links, require Cloudflare / direct video file indicators or admin upload source
+    const cloudflareMediaOnly = contentList.filter(item => {
+      const mediaUrl = (item as any).media_url || (item as any).audio_url || (item as any).video_url || (item as any).url || item.youtube_url;
       const isExternalYouTube = isYouTubeUrl(mediaUrl);
       const isCloudflareSource = item.source_type === 'admin' || (item as any).storage_provider === 'cloudflare' || (mediaUrl && !isExternalYouTube);
 
       return isCloudflareSource && !isExternalYouTube;
     });
 
-    const filtered = cloudflareOnly.filter(item => {
+    const filtered = cloudflareMediaOnly.filter(item => {
       const artist = getArtistDetails(item.artist_id);
       const searchString = `${item.title || ''} ${artist?.name || ''} ${item.author_name || ''} ${item.genre || ''}`.toLowerCase();
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
@@ -115,15 +124,15 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <FileVideo size={22} className="text-red-500" />
-            Direct Cloudflare Video Files
+            <Disc size={22} className="text-red-500 animate-spin-slow" />
+            Uploaded Cloudflare Media Files (Audio & Video)
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
               {processedItems.length} {processedItems.length === 1 ? 'file' : 'files'}
             </span>
           </h2>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
             <ShieldCheck size={14} className="text-green-400 shrink-0" />
-            <span>Strictly displaying verified Cloudflare video uploads via bearer authenticated <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">/api/admin/content</code></span>
+            <span>Strictly displaying verified Cloudflare audio & video media files via bearer authenticated <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">/api/admin/content</code></span>
           </p>
         </div>
 
@@ -158,7 +167,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
             className="bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
           >
             <option value="All">All Categories</option>
-            <option value="Music">Music</option>
+            <option value="Music">Music (Audio)</option>
             <option value="Video">Video</option>
             <option value="Comedy">Comedy</option>
             <option value="Documentary">Documentary</option>
@@ -191,7 +200,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       {errorMsg ? (
         <div className="text-center py-12 bg-red-950/10 rounded-2xl border border-red-900/30 p-6">
           <AlertCircle className="mx-auto text-red-500 mb-3" size={32} />
-          <h3 className="text-sm font-semibold text-white">Error Loading Cloudflare Files</h3>
+          <h3 className="text-sm font-semibold text-white">Error Loading Media Files</h3>
           <p className="text-xs text-gray-400 mt-1">{errorMsg}</p>
         </div>
       ) : loading ? (
@@ -202,17 +211,18 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         </div>
       ) : processedItems.length === 0 ? (
         <div className="text-center py-14 bg-gray-900/40 rounded-2xl border border-gray-800 border-dashed p-6">
-          <FileVideo className="mx-auto text-gray-600 mb-3" size={36} />
-          <h3 className="text-base font-semibold text-white">No Cloudflare Video Files Found</h3>
+          <Disc className="mx-auto text-gray-600 mb-3" size={36} />
+          <h3 className="text-base font-semibold text-white">No Cloudflare Media Files Found</h3>
           <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
-            No direct Cloudflare video file uploads match your search query or filter criteria. YouTube links have been excluded.
+            No direct Cloudflare media file uploads (audio or video) match your search query or filter criteria. YouTube links have been excluded.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {processedItems.map((item) => {
             const artist = getArtistDetails(item.artist_id);
-            const mediaUrl = (item as any).video_url || (item as any).url || item.youtube_url;
+            const mediaUrl = (item as any).media_url || (item as any).audio_url || (item as any).video_url || (item as any).url || item.youtube_url;
+            const isAudio = checkIsAudio(item);
 
             return (
               <div 
@@ -220,15 +230,21 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                 className="bg-gray-900/90 hover:bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-2xl p-4 transition-all duration-200 flex flex-col sm:flex-row gap-4 group"
               >
                 {/* Thumbnail Preview / Play Button */}
-                <div className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden border border-gray-800 bg-black shrink-0">
+                <div className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden border border-gray-800 bg-black shrink-0 flex items-center justify-center">
                   <img 
-                    src={item.thumbnail_url || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&h=180&fit=crop'} 
+                    src={item.thumbnail_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=320&h=180&fit=crop'} 
                     alt={item.title} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  {/* Media Type Badge Overlay */}
+                  <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-black/70 text-white border border-white/10 backdrop-blur-md flex items-center gap-1">
+                    {isAudio ? <Music size={10} className="text-red-400" /> : <FileVideo size={10} className="text-blue-400" />}
+                    <span>{isAudio ? 'Audio' : 'Video'}</span>
+                  </div>
+
                   {mediaUrl && (
                     <button
-                      onClick={() => setPlayingVideo({ url: mediaUrl, title: item.title })}
+                      onClick={() => setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
                       className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
                       <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-950/50 hover:scale-110 transition-transform">
@@ -238,7 +254,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                   )}
                 </div>
 
-                {/* Video Info Details */}
+                {/* Media Info Details */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between">
                   <div>
                     {/* Header: Author & Status */}
@@ -269,11 +285,11 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                     <h4 className="text-sm font-bold text-white mb-2 line-clamp-2 hover:text-red-400 transition-colors">
                       {mediaUrl ? (
                         <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">
-                          <span>{item.title || 'Untitled Video'}</span>
+                          <span>{item.title || 'Untitled Media'}</span>
                           <ExternalLink size={12} className="shrink-0 text-gray-500" />
                         </a>
                       ) : (
-                        <span>{item.title || 'Untitled Video'}</span>
+                        <span>{item.title || 'Untitled Media'}</span>
                       )}
                     </h4>
                   </div>
@@ -314,29 +330,61 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         </div>
       )}
 
-      {/* HTML5 Direct Video Modal Preview */}
-      {playingVideo && (
+      {/* HTML5 Direct Media Modal Player (Video / Audio) */}
+      {playingMedia && (
         <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-3xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="relative w-full max-w-2xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-800">
               <div className="flex items-center gap-2 truncate pr-4">
                 <ShieldCheck size={16} className="text-green-400 shrink-0" />
-                <h3 className="text-sm font-bold text-white truncate">{playingVideo.title}</h3>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-800 text-gray-300 uppercase">
+                  {playingMedia.isAudio ? 'Audio Player' : 'Video Player'}
+                </span>
+                <h3 className="text-sm font-bold text-white truncate">{playingMedia.title}</h3>
               </div>
               <button
-                onClick={() => setPlayingVideo(null)}
+                onClick={() => setPlayingMedia(null)}
                 className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
-            <div className="relative aspect-video bg-black flex items-center justify-center">
-              <video
-                src={playingVideo.url}
-                controls
-                autoPlay
-                className="w-full h-full"
-              />
+
+            {/* Modal Content: Video Player or Audio Visualizer Card */}
+            <div className="p-6 bg-black flex flex-col items-center justify-center min-h-[220px]">
+              {playingMedia.isAudio ? (
+                <div className="w-full flex flex-col items-center space-y-4">
+                  {playingMedia.thumbnail ? (
+                    <div className="w-32 h-32 rounded-2xl overflow-hidden border border-gray-800 shadow-xl relative">
+                      <img src={playingMedia.thumbnail} alt={playingMedia.title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Music size={32} className="text-red-500 animate-pulse" />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center text-white shadow-lg">
+                      <Music size={36} className="animate-pulse" />
+                    </div>
+                  )}
+                  
+                  <audio
+                    src={playingMedia.url}
+                    controls
+                    autoPlay
+                    className="w-full rounded-xl bg-gray-900 border border-gray-800 p-2"
+                  />
+                </div>
+              ) : (
+                <div className="relative w-full aspect-video">
+                  <video
+                    src={playingMedia.url}
+                    controls
+                    autoPlay
+                    className="w-full h-full rounded-xl"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -344,4 +392,5 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     </div>
   );
 }
+
 
