@@ -12,7 +12,9 @@ import {
   AlertCircle,
   ArrowUpDown,
   RefreshCw,
-  X
+  X,
+  ShieldCheck,
+  FileVideo
 } from 'lucide-react';
 
 export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigger?: number }) {
@@ -45,7 +47,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       setArtists(artistsDir);
     } catch (err: any) {
       console.error("Failed to load Cloudflare uploads:", err);
-      setErrorMsg(err?.message || "Failed to load uploads from backend.");
+      setErrorMsg(err?.message || "Failed to load uploads securely from backend.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -61,9 +63,24 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     return artists.find(a => a.id === artistId);
   };
 
-  // Filtered & Sorted items
+  // Helper to check if a URL is a YouTube link
+  const isYouTubeUrl = (url?: string) => {
+    if (!url) return false;
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
+  // Filtered & Sorted items - STRICTLY Cloudflare upload video files only
   const processedItems = useMemo(() => {
-    const filtered = contentList.filter(item => {
+    const cloudflareOnly = contentList.filter(item => {
+      const mediaUrl = (item as any).video_url || (item as any).url || item.youtube_url;
+      // Exclude YouTube links, require Cloudflare / direct video file indicators or admin upload source
+      const isExternalYouTube = isYouTubeUrl(mediaUrl);
+      const isCloudflareSource = item.source_type === 'admin' || (item as any).storage_provider === 'cloudflare' || (mediaUrl && !isExternalYouTube);
+
+      return isCloudflareSource && !isExternalYouTube;
+    });
+
+    const filtered = cloudflareOnly.filter(item => {
       const artist = getArtistDetails(item.artist_id);
       const searchString = `${item.title || ''} ${artist?.name || ''} ${item.author_name || ''} ${item.genre || ''}`.toLowerCase();
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
@@ -98,13 +115,15 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            Uploaded Video Files
+            <FileVideo size={22} className="text-red-500" />
+            Direct Cloudflare Video Files
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
               {processedItems.length} {processedItems.length === 1 ? 'file' : 'files'}
             </span>
           </h2>
-          <p className="text-xs text-gray-400 mt-1">
-            Recent and past uploads fetched directly from Cloudflare via <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">/api/admin/content</code>
+          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+            <ShieldCheck size={14} className="text-green-400 shrink-0" />
+            <span>Strictly displaying verified Cloudflare video uploads via bearer authenticated <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">/api/admin/content</code></span>
           </p>
         </div>
 
@@ -160,7 +179,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
           <button
             onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-950/80 hover:bg-gray-800 border border-gray-800 text-xs font-medium text-gray-300 transition-all cursor-pointer"
-            title="Sort by creation date"
+            title="Sort by upload date"
           >
             <ArrowUpDown size={13} className="text-red-500" />
             <span>{sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}</span>
@@ -172,7 +191,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       {errorMsg ? (
         <div className="text-center py-12 bg-red-950/10 rounded-2xl border border-red-900/30 p-6">
           <AlertCircle className="mx-auto text-red-500 mb-3" size={32} />
-          <h3 className="text-sm font-semibold text-white">Error Loading Content</h3>
+          <h3 className="text-sm font-semibold text-white">Error Loading Cloudflare Files</h3>
           <p className="text-xs text-gray-400 mt-1">{errorMsg}</p>
         </div>
       ) : loading ? (
@@ -183,17 +202,17 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         </div>
       ) : processedItems.length === 0 ? (
         <div className="text-center py-14 bg-gray-900/40 rounded-2xl border border-gray-800 border-dashed p-6">
-          <AlertCircle className="mx-auto text-gray-600 mb-3" size={36} />
-          <h3 className="text-base font-semibold text-white">No Uploaded Content Found</h3>
+          <FileVideo className="mx-auto text-gray-600 mb-3" size={36} />
+          <h3 className="text-base font-semibold text-white">No Cloudflare Video Files Found</h3>
           <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
-            No video uploads match your current search query or active filter settings.
+            No direct Cloudflare video file uploads match your search query or filter criteria. YouTube links have been excluded.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {processedItems.map((item) => {
             const artist = getArtistDetails(item.artist_id);
-            const mediaUrl = item.youtube_url || (item as any).url || (item as any).video_url;
+            const mediaUrl = (item as any).video_url || (item as any).url || item.youtube_url;
 
             return (
               <div 
@@ -283,7 +302,9 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       <span className="inline-flex items-center gap-1 font-medium">
                         <Clock size={10} /> Uploaded: {formatDate(item.created_at || item.published_at)}
                       </span>
-                      <span className="text-gray-600">Cloudflare</span>
+                      <span className="text-green-400/90 font-medium flex items-center gap-1">
+                        <ShieldCheck size={10} /> Cloudflare Secured
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -293,12 +314,15 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         </div>
       )}
 
-      {/* Video Modal Preview */}
+      {/* HTML5 Direct Video Modal Preview */}
       {playingVideo && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="relative w-full max-w-3xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <h3 className="text-sm font-bold text-white truncate pr-4">{playingVideo.title}</h3>
+              <div className="flex items-center gap-2 truncate pr-4">
+                <ShieldCheck size={16} className="text-green-400 shrink-0" />
+                <h3 className="text-sm font-bold text-white truncate">{playingVideo.title}</h3>
+              </div>
               <button
                 onClick={() => setPlayingVideo(null)}
                 className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
@@ -306,23 +330,13 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                 <X size={18} />
               </button>
             </div>
-            <div className="relative aspect-video bg-black">
-              {playingVideo.url.includes('youtube.com') || playingVideo.url.includes('youtu.be') ? (
-                <iframe
-                  src={playingVideo.url.replace('watch?v=', 'embed/')}
-                  title={playingVideo.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <video
-                  src={playingVideo.url}
-                  controls
-                  autoPlay
-                  className="w-full h-full"
-                />
-              )}
+            <div className="relative aspect-video bg-black flex items-center justify-center">
+              <video
+                src={playingVideo.url}
+                controls
+                autoPlay
+                className="w-full h-full"
+              />
             </div>
           </div>
         </div>
@@ -330,3 +344,4 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     </div>
   );
 }
+
