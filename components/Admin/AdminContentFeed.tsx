@@ -54,7 +54,12 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
+    const matchesCategory = (() => {
+      if (categoryFilter === 'All') return true;
+      const itemCat = (item.category || '').toLowerCase().trim();
+      const filterCat = categoryFilter.toLowerCase().trim();
+      return itemCat === filterCat || itemCat.includes(filterCat);
+    })();
 
     return matchesSearch && matchesStatus && matchesCategory;
   });

@@ -95,7 +95,21 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-      const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
+      
+      const matchesCategory = (() => {
+        if (categoryFilter === 'All') return true;
+        const itemCat = (item.category || '').toLowerCase().trim();
+        const filterCat = categoryFilter.toLowerCase().trim();
+        const itemGenre = (item.genre || '').toLowerCase().trim();
+
+        if (filterCat === 'music') {
+          return itemCat === 'music' || itemCat === 'audio' || checkIsAudio(item);
+        }
+        if (filterCat === 'video') {
+          return itemCat === 'video' || !checkIsAudio(item);
+        }
+        return itemCat === filterCat || itemCat.includes(filterCat) || itemGenre.includes(filterCat);
+      })();
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
@@ -169,8 +183,11 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
             <option value="All">All Categories</option>
             <option value="Music">Music (Audio)</option>
             <option value="Video">Video</option>
+            <option value="Culture">Culture</option>
+            <option value="Sport">Sport</option>
             <option value="Comedy">Comedy</option>
-            <option value="Documentary">Documentary</option>
+            <option value="News">News</option>
+            <option value="Geography/Nature">Geography/Nature</option>
           </select>
 
           {/* Status Filter */}
@@ -231,11 +248,21 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
               >
                 {/* Thumbnail Preview / Play Button */}
                 <div className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden border border-gray-800 bg-black shrink-0 flex items-center justify-center">
-                  <img 
-                    src={item.thumbnail_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=320&h=180&fit=crop'} 
-                    alt={item.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+                  {!isAudio && mediaUrl && (!item.thumbnail_url || item.thumbnail_url.includes('unsplash.com')) ? (
+                    <video
+                      src={`${mediaUrl}#t=0.5`}
+                      preload="metadata"
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+                    />
+                  ) : (
+                    <img 
+                      src={item.thumbnail_url || (isAudio ? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=320&h=180&fit=crop' : 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=320&h=180&fit=crop')} 
+                      alt={item.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  )}
                   {/* Media Type Badge Overlay */}
                   <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-black/70 text-white border border-white/10 backdrop-blur-md flex items-center gap-1">
                     {isAudio ? <Music size={10} className="text-red-400" /> : <FileVideo size={10} className="text-blue-400" />}

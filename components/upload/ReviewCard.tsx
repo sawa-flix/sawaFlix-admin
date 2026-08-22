@@ -85,13 +85,17 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             {file ? (
               <div className="space-y-4 text-sm font-medium">
                 {/* Video Preview / Cover */}
-                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-md border border-base-content/10">
+                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black shadow-md border border-base-content/10 group">
                   <video
-                    src={URL.createObjectURL(file)}
+                    src={`${URL.createObjectURL(file)}#t=0.5`}
                     controls
                     preload="metadata"
+                    playsInline
                     className="w-full h-full object-contain"
                   />
+                  <div className="absolute top-2 left-2 z-10 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-600/90 text-white shadow-sm backdrop-blur-md">
+                    TikTok Style Cover Frame (0.5s)
+                  </div>
                 </div>
 
                 <p className="flex flex-col"><span className="text-base-content/50 mb-1 uppercase tracking-wider text-xs">File Name</span> <span className="text-base truncate">{file.name}</span></p>
