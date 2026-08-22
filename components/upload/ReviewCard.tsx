@@ -108,7 +108,7 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
           {/* Metadata Info */}
           <div className="bg-base-200/50 p-6 rounded-3xl border border-base-content/5 shadow-inner">
             <div className="flex items-center gap-3 mb-5 border-b border-base-content/10 pb-4">
-              <h3 className="text-xl font-bold ml-2">Primary Metadata</h3>
+              <h3 className="text-xl font-bold ml-2">Primary Descriptions</h3>
             </div>
             <div className="space-y-4 text-sm font-medium">
               <p className="flex flex-col"><span className="text-base-content/50 mb-1 uppercase tracking-wider text-xs">Title</span> <span className="text-base">{metadata.title}</span></p>

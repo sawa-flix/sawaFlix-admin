@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1116.0",
+    "@aws-sdk/s3-request-presigner": "^3.1116.0",
     "@hookform/resolvers": "^5.4.0",
     "@lottiefiles/dotlottie-react": "^0.15.2",
     "@react-oauth/google": "^0.12.2",
@@ -24,6 +26,7 @@
     "jwt-decode": "^4.0.0",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.537.0",
+    "mongodb": "^7.5.0",
     "next": "^16.1.6",
     "next-swagger-doc": "^0.4.1",
     "react": "^19.2.4",
