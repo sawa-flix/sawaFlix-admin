@@ -7,6 +7,7 @@ import { useDirectUpload } from '@/hooks/useDirectUpload';
 import { MetadataForm, MetadataFormData } from '@/components/upload/MetadataForm';
 import { CategoryFields, CategoryFormData } from '@/components/upload/CategoryFields';
 import { ReviewCard } from '@/components/upload/ReviewCard';
+import CloudflareUploadsFeed from '@/components/upload/CloudflareUploadsFeed';
 
 export default function UploadContentPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function UploadContentPage() {
   const [step, setStep] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [metadata, setMetadata] = useState<Partial<MetadataFormData & CategoryFormData>>({});
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Upload Hook
   const { isUploading, progress, error, status, startUpload } = useDirectUpload();
@@ -38,6 +40,8 @@ export default function UploadContentPage() {
     if (!file) return;
     try {
       await startUpload({ file, metadata });
+      // Trigger feed refresh on successful upload confirmation
+      setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       // Error is caught and surfaced inside useDirectUpload via the 'error' state
       console.error("Upload process failed:", err);
@@ -90,28 +94,31 @@ export default function UploadContentPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
       <div>
         <h1 className="text-2xl font-bold text-white">Upload Content</h1>
         <p className="text-sm text-gray-400 mt-1">
-          Upload video content directly to your media catalog.
+          Upload video content directly to your Cloudflare media catalog.
         </p>
-
       </div>
 
-      <div className="w-full bg-base-100 p-8 rounded-3xl shadow-sm border border-base-content/5 mt-6">
+      <div className="w-full bg-base-100 p-6 sm:p-8 rounded-3xl shadow-sm border border-base-content/5 mt-6">
         {/* DaisyUI Horizontal Step Indicator */}
-        <ul className="steps steps-horizontal w-full mb-8">
+        <ul className="steps steps-horizontal w-full mb-8 text-xs sm:text-sm">
           <li className={`step ${step >= 1 ? 'step-primary' : ''}`}>Select File</li>
           <li className={`step ${step >= 2 ? 'step-primary' : ''}`}>Basic Info</li>
           <li className={`step ${step >= 3 ? 'step-primary' : ''}`}>Category</li>
           <li className={`step ${step >= 4 ? 'step-primary' : ''}`}>Review</li>
         </ul>
 
-        <div className="min-h-[400px]">
+        <div className="min-h-[380px]">
           {renderStepContent()}
         </div>
       </div>
+
+      {/* Cloudflare Uploaded Videos Section (Below Drag-and-Drop) */}
+      <CloudflareUploadsFeed refreshTrigger={refreshTrigger} />
     </div>
   );
 }
+
