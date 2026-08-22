@@ -3,17 +3,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    LayoutDashboard,
-    Settings,
     ShieldCheck,
     LogOut,
-    Bell,
     Video,
     Star,
     PlusCircle,
     ListVideo,
     ChevronDown,
-    ChevronRight,
 } from 'lucide-react';
 
 const contentSubLinks = [
@@ -28,7 +24,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     const [contentOpen, setContentOpen] = useState(isContentActive);
 
     const menuItems = [
-        { name: 'Verifications', icon: ShieldCheck, id: 'dashboard', route: '/admin' },
+        { name: 'Verifications', icon: ShieldCheck, id: 'verifications', route: '/admin' },
     ];
 
     const handleItemClick = () => {
@@ -36,21 +32,25 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
     };
 
     return (
-        <div className="h-full flex flex-col bg-gray-900 border-r border-gray-800">
-
-            {/* Admin Badge/Header Area */}
-            <div className="px-4 py-6 flex items-center space-x-3 border-b border-gray-800/50 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center shadow-lg shadow-red-500/20">
-                    <ShieldCheck className="text-white" size={18} />
+        <div className="h-full flex flex-col bg-gray-900 border-r border-gray-800/80 text-gray-300">
+            {/* Header Badge */}
+            <div className="px-5 py-5 flex items-center space-x-3.5 border-b border-gray-800/60">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-md shadow-red-900/30">
+                    <ShieldCheck className="text-white" size={19} />
                 </div>
                 <div>
-                    <h2 className="text-white font-bold text-sm tracking-wide">ADMIN PORTAL</h2>
-                    <p className="text-xs text-gray-500">SawaFlix Management</p>
+                    <h2 className="text-white font-bold text-xs tracking-wider uppercase">ADMIN PORTAL</h2>
+                    <p className="text-[11px] text-gray-500 font-medium">SawaFlix Management</p>
                 </div>
             </div>
 
-            <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-                {/* Static menu items */}
+            {/* Navigation Menu */}
+            <nav className="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto scrollbar-none">
+                <div className="px-3 pb-2 text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+                    Main Menu
+                </div>
+
+                {/* Primary Nav Links */}
                 {menuItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = item.route === '/admin'
@@ -62,52 +62,66 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
                             key={item.id}
                             href={item.route}
                             onClick={handleItemClick}
-                            className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 group ${isActive
-                                ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/20'
-                                : 'hover:bg-gray-800 text-gray-300 hover:text-white'
-                                }`}
+                            className={`relative flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition-all duration-200 group font-medium text-sm ${
+                                isActive
+                                    ? 'bg-gray-800/80 text-white font-semibold shadow-inner'
+                                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40'
+                            }`}
                         >
+                            {/* Left active indicator bar */}
+                            {isActive && (
+                                <span className="absolute left-0 top-2 bottom-2 w-1 bg-red-600 rounded-r-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
+                            )}
                             <div className="flex items-center space-x-3">
                                 <Icon
-                                    size={20}
-                                    className={`transition-colors ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}
+                                    size={18}
+                                    className={`transition-colors duration-200 ${
+                                        isActive ? 'text-red-500' : 'text-gray-400 group-hover:text-gray-200'
+                                    }`}
                                 />
-                                <span className="font-medium">{item.name}</span>
+                                <span>{item.name}</span>
                             </div>
                         </Link>
                     );
                 })}
 
-                {/* Content — expandable */}
-                <div>
+                {/* Collapsible Content Section */}
+                <div className="pt-1">
                     <button
                         onClick={() => setContentOpen(prev => !prev)}
-                        className={`flex items-center justify-between w-full p-3 rounded-xl transition-all duration-200 group ${
+                        className={`relative flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl transition-all duration-200 group font-medium text-sm ${
                             isContentActive
-                                ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/20'
-                                : 'hover:bg-gray-800 text-gray-300 hover:text-white'
+                                ? 'bg-gray-800/80 text-white font-semibold shadow-inner'
+                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/40'
                         }`}
                     >
+                        {isContentActive && (
+                            <span className="absolute left-0 top-2 bottom-2 w-1 bg-red-600 rounded-r-full shadow-[0_0_8px_rgba(220,38,38,0.8)]" />
+                        )}
                         <div className="flex items-center space-x-3">
                             <Video
-                                size={20}
-                                className={`transition-colors ${isContentActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}
+                                size={18}
+                                className={`transition-colors duration-200 ${
+                                    isContentActive ? 'text-red-500' : 'text-gray-400 group-hover:text-gray-200'
+                                }`}
                             />
-                            <span className="font-medium">Content</span>
+                            <span>Content</span>
                         </div>
-                        {contentOpen
-                            ? <ChevronDown size={16} className="opacity-70" />
-                            : <ChevronRight size={16} className="opacity-70" />
-                        }
+                        <ChevronDown
+                            size={16}
+                            className={`transition-transform duration-200 text-gray-400 ${
+                                contentOpen ? 'rotate-180 text-white' : ''
+                            }`}
+                        />
                     </button>
 
                     {/* Sub-links */}
                     <div
-                        className={`overflow-hidden transition-all duration-300 ${
-                            contentOpen ? 'max-h-48 opacity-100 mt-1' : 'max-h-0 opacity-0'
+                        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                            contentOpen ? 'max-h-52 opacity-100 mt-1.5' : 'max-h-0 opacity-0'
                         }`}
                     >
-                        <div className="ml-3 pl-4 border-l border-gray-700/60 space-y-0.5">
+                        <div className="ml-4 pl-3.5 border-l border-gray-800 space-y-1">
                             {contentSubLinks.map((sub) => {
                                 const SubIcon = sub.icon;
                                 const isSubActive = pathname === sub.route;
@@ -116,17 +130,17 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
                                         key={sub.route}
                                         href={sub.route}
                                         onClick={handleItemClick}
-                                        className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
+                                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 ${
                                             isSubActive
-                                                ? 'text-white bg-gray-800'
-                                                : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                                                ? 'text-white bg-gray-800/90 font-semibold shadow-sm'
+                                                : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/40'
                                         }`}
                                     >
                                         <SubIcon
-                                            size={14}
-                                            className={isSubActive ? 'text-red-400' : 'text-gray-500'}
+                                            size={15}
+                                            className={isSubActive ? 'text-red-500' : 'text-gray-500'}
                                         />
-                                        {sub.name}
+                                        <span>{sub.name}</span>
                                     </Link>
                                 );
                             })}
@@ -135,14 +149,16 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
                 </div>
             </nav>
 
-            {/* Bottom Actions */}
-            <div className="p-4 border-t border-gray-800">
+            {/* Bottom Actions Footer */}
+            <div className="p-3 border-t border-gray-800/80">
                 <button
-                    className="flex items-center space-x-3 w-full p-3 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition-all duration-200"
-                    onClick={() => console.log('Admin Logout')}
+                    className="flex items-center space-x-3 w-full px-3.5 py-2.5 rounded-xl hover:bg-gray-800/50 text-gray-400 hover:text-red-400 transition-all duration-200 text-sm font-medium cursor-pointer"
+                    onClick={() => {
+                        console.log('Admin Logout');
+                    }}
                 >
-                    <LogOut size={20} />
-                    <span className="font-medium hover:cursor-pointer">Sign Out</span>
+                    <LogOut size={18} />
+                    <span>Sign Out</span>
                 </button>
             </div>
         </div>
