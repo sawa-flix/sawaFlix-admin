@@ -31,7 +31,7 @@ export interface AdminContent {
   status: 'draft' | 'published';
   created_at: string;
   published_at?: string;
-  source_type: 'admin';
+  source_type?: 'admin' | 'native' | 'cloudflare' | 'upload' | 'youtube' | 'direct' | string;
 }
 
 // Main sawaflix-backend (feed etc.)
@@ -152,12 +152,34 @@ export async function getAdminContent(): Promise<AdminContent[]> {
             return [];
         }
         const data = await res.json();
-        return Array.isArray(data) ? data : (data.data || []);
+        if (Array.isArray(data)) return data;
+        const list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
+        return Array.isArray(list) ? list : [];
     } catch (err) {
         console.error("Failed to fetch admin content:", err);
         return [];
     }
 }
+
+/** Fetch only published admin uploads — used by the Uploaded Feed sidebar page */
+export async function getAdminPublishedContent(): Promise<AdminContent[]> {
+    try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${ADMIN_API_URL}/api/admin/content?status=published`, { headers });
+        if (!res.ok) {
+            console.warn(`[API] getAdminPublishedContent returned ${res.status}`);
+            return [];
+        }
+        const data = await res.json();
+        if (Array.isArray(data)) return data;
+        const list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
+        return Array.isArray(list) ? list : [];
+    } catch (err) {
+        console.error("Failed to fetch published admin content:", err);
+        return [];
+    }
+}
+
 
 export async function saveAdminContent(content: Omit<AdminContent, 'id' | 'created_at' | 'source_type'> & { id?: string }): Promise<AdminContent> {
     const headers = await getAuthHeaders();
@@ -284,6 +306,111 @@ export async function confirmAdminUpload(videoId: string, metadata: any) {
 
     if (!res.ok) {
         throw new Error(`Failed to confirm upload (Status: ${res.status})`);
+    }
+
+    return res.json();
+}
+
+export async function publishToMainFeed(content: Partial<AdminContent> & { id?: string }): Promise<boolean> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers = {
+        'Authorization': `Bearer ${session?.access_token || ''}`,
+        'Content-Type': 'application/json'
+    };
+
+    let creatorId = content.artist_id || 
+                    (content as any).creator_id || 
+                    (content as any).artistId || 
+                    (content as any).creatorId || 
+                    session?.user?.id || 
+                    '';
+
+    if (!creatorId) {
+        try {
+            // Fixed: creator_profiles uses `creator_id` column, not `id`
+            const { data } = await supabase.from('creator_profiles').select('creator_id').limit(1).maybeSingle();
+            if (data?.creator_id) creatorId = data.creator_id;
+        } catch (e) {}
+    }
+
+    if (!creatorId) {
+        try {
+            const { data } = await supabase.from('contents').select('creator_id').not('creator_id', 'is', null).limit(1).maybeSingle();
+            if (data?.creator_id) creatorId = data.creator_id;
+        } catch (e) {}
+    }
+
+    if (!creatorId) {
+        creatorId = '00000000-0000-0000-0000-000000000000';
+    }
+
+    const mediaUrl = (content as any).media_url || (content as any).video_url || (content as any).url || content.youtube_url || '';
+    // media_path should be the raw R2 object key (video_url from mongo), not the presigned URL
+    const mediaPath = (content as any).media_path || (content as any).video_url || mediaUrl || 'admin_upload';
+    
+    const isReelFormat = (content as any).is_reel || (content as any).format === 'reel' || (content.category || '').toLowerCase() === 'reel';
+
+    const payload = {
+        id: content.id,
+        title: content.title || 'Untitled Upload',
+        description: (content as any).description || '',
+        category: isReelFormat ? 'Reel' : (content.category || 'Video'),
+        format: isReelFormat ? 'reel' : ((content as any).format || 'standard'),
+        is_reel: isReelFormat,
+        content_type: (content as any).content_type || 'video',
+        media_url: mediaUrl,
+        media_path: mediaPath,
+        thumbnail_url: content.thumbnail_url || '',
+        duration: (content as any).duration || 0,
+        creator_id: creatorId,
+        creatorId: creatorId,
+        artist_id: creatorId,
+        artistId: creatorId,
+        status: 'published'
+    };
+
+    let res = await fetch(`${ADMIN_API_URL}/api/admin/content/publish`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+        // Fallback attempt to direct upload endpoint
+        res = await fetch(`${ADMIN_API_URL}/api/admin/uploads/direct`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+        });
+    }
+
+    if (!res.ok) {
+        let errText = `Status: ${res.status}`;
+        try {
+            const json = await res.json();
+            errText = json.error || json.message || errText;
+        } catch (e) {}
+        throw new Error(`Failed to publish to main feed: ${errText}`);
+    }
+
+    return true;
+}
+
+export async function uploadAdminDirectContentApi(metadata: Partial<AdminContent> & { media_url?: string }): Promise<any> {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${ADMIN_API_URL}/api/admin/uploads/direct`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(metadata)
+    });
+
+    if (!res.ok) {
+        let errText = `Status: ${res.status}`;
+        try {
+            const json = await res.json();
+            errText = json.error || json.message || errText;
+        } catch (e) {}
+        throw new Error(`Failed direct admin upload: ${errText}`);
     }
 
     return res.json();
