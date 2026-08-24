@@ -248,6 +248,9 @@ export async function fetchOEmbed(url: string): Promise<{ title: string; author_
       throw new Error('Invalid YouTube URL. Please paste a valid link.');
     }
   
+    const videoId = match[5];
+    const directYtThumb = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+
     try {
       const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
       if (!res.ok) {
@@ -257,14 +260,14 @@ export async function fetchOEmbed(url: string): Promise<{ title: string; author_
       return {
         title: data.title || 'Untitled YouTube Video',
         author_name: data.author_name || 'Unknown Creator',
-        thumbnail_url: data.thumbnail_url || 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&h=180&fit=crop'
+        thumbnail_url: data.thumbnail_url || directYtThumb || 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg'
       };
     } catch (err) {
-      console.warn("oEmbed failed, returning mock data:", err);
+      console.warn("oEmbed failed, returning fallback details:", err);
       return {
-        title: 'YouTube Video Title (Mocked oEmbed Response)',
-        author_name: 'YouTube Channel Name',
-        thumbnail_url: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=320&h=180&fit=crop'
+        title: 'YouTube Video',
+        author_name: 'YouTube Creator',
+        thumbnail_url: directYtThumb || 'https://img.youtube.com/vi/' + videoId + '/hqdefault.jpg'
       };
     }
 }

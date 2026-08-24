@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { getAdminPublishedContent, AdminContent, getArtistsDirectory, Artist } from '@/services/adminContentService';
+import { getYouTubeThumbnailUrl } from '@/utils/mediaUtils';
 import { 
   Search, 
   Clock, 
@@ -219,25 +220,51 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
               >
                 {/* Thumbnail / Play Preview */}
                 <div className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden border border-gray-800 bg-black shrink-0">
-                  {isAudio ? (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950">
-                      {item.thumbnail_url ? (
-                        <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover opacity-50" />
-                      ) : (
-                        <Music size={32} className="text-red-500" />
-                      )}
-                    </div>
-                  ) : item.thumbnail_url ? (
-                    <img 
-                      src={item.thumbnail_url} 
-                      alt={item.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-950">
-                      <Video size={28} className="text-gray-700" />
-                    </div>
-                  )}
+                  {(() => {
+                    if (isAudio) {
+                      return (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-950">
+                          {item.thumbnail_url ? (
+                            <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover opacity-50" />
+                          ) : (
+                            <Music size={32} className="text-red-500" />
+                          )}
+                        </div>
+                      );
+                    }
+
+                    const effectiveThumb = item.thumbnail_url && !item.thumbnail_url.includes('unsplash.com')
+                      ? item.thumbnail_url
+                      : getYouTubeThumbnailUrl(playUrl);
+
+                    if (effectiveThumb) {
+                      return (
+                        <img 
+                          src={effectiveThumb} 
+                          alt={item.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      );
+                    }
+
+                    if (playUrl) {
+                      return (
+                        <video
+                          src={`${playUrl}#t=0.5`}
+                          preload="metadata"
+                          muted
+                          playsInline
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+                        />
+                      );
+                    }
+
+                    return (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-950">
+                        <Video size={28} className="text-gray-700" />
+                      </div>
+                    );
+                  })()}
 
                   {/* Play overlay button */}
                   {playUrl && (
