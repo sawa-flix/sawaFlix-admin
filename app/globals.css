@@ -19,6 +19,13 @@
   --color-gray-900: var(--background); /* Main background */
   --color-gray-800: var(--card-bg); /* Cards and borders */
   --color-gray-700: var(--secondary); /* Lighter elements */
+
+  /* Font Families */
+  --font-inter: var(--font-inter), sans-serif;
+  --font-roboto: var(--font-roboto), sans-serif;
+  --font-open-sans: var(--font-open-sans), sans-serif;
+  --font-montserrat: var(--font-montserrat), sans-serif;
+  --font-poppins: var(--font-poppins), sans-serif;
 }
 
 body {
@@ -26,6 +33,48 @@ body {
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
   overflow-x: hidden;
+}
+
+/* Headings & Display: Montserrat for bold geometric titles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-montserrat), sans-serif;
+}
+
+/* Subheadings / section titles inside components */
+.title-display {
+  font-family: var(--font-montserrat), sans-serif;
+}
+
+/* Poppins for cards, menus, navs */
+nav, .menu-item, .card-title, .nav-menu {
+  font-family: var(--font-poppins), sans-serif;
+}
+
+/* Roboto for natural reading rhythm in long text/articles */
+p, article, .reading-body {
+  font-family: var(--font-roboto), sans-serif;
+}
+
+/* Open Sans for dense UI tables/heavy content streams */
+table, .content-stream, .dense-ui {
+  font-family: var(--font-open-sans), sans-serif;
+}
+
+/* Inter utility class for precise UI text */
+.font-inter {
+  font-family: var(--font-inter), sans-serif;
+}
+.font-roboto {
+  font-family: var(--font-roboto), sans-serif;
+}
+.font-open-sans {
+  font-family: var(--font-open-sans), sans-serif;
+}
+.font-montserrat {
+  font-family: var(--font-montserrat), sans-serif;
+}
+.font-poppins {
+  font-family: var(--font-poppins), sans-serif;
 }
 
 /* Custom Scrollbar */
