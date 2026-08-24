@@ -4,8 +4,8 @@
     <style>
       /* White text for dark backgrounds */
       .cls-1 { fill: #fff; }
-      /* Red play triangle */
-      .cls-2 { fill: #e50914; }
+      /* White play triangle */
+      .cls-2 { fill: #ffffff; }
       /* White text letters (was dark #1e0507, now white) */
       .cls-3 { fill: #ffffff; }
       /* Red icon square background (brand red) */
