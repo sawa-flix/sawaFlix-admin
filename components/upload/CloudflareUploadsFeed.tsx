@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getAdminContent, AdminContent, getArtistsDirectory, Artist } from '@/services/adminContentService';
+import { useRouter } from 'next/navigation';
+import { getAdminContent, AdminContent, getArtistsDirectory, Artist, publishToMainFeed } from '@/services/adminContentService';
+import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { 
   Search, 
   Clock, 
@@ -16,19 +18,27 @@ import {
   ShieldCheck,
   FileVideo,
   Music,
-  Disc
+  Disc,
+  Send,
+  CheckCircle,
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 
 export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigger?: number }) {
+  const router = useRouter();
   const [contentList, setContentList] = useState<AdminContent[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [publishingIds, setPublishingIds] = useState<Set<string>>(new Set());
+
+  const { addNotification } = useAdminNotifications();
 
   // Search, Filters & Sorting
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
+  const [fileTypeFilter, setFileTypeFilter] = useState<'all' | 'video' | 'audio'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
@@ -56,6 +66,37 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     }
   };
 
+  const handlePublishItemToFeed = async (item: AdminContent) => {
+    if (publishingIds.has(item.id)) return;
+    setPublishingIds(prev => new Set(prev).add(item.id));
+
+    try {
+      await publishToMainFeed(item);
+      addNotification({
+        type: 'approved',
+        title: 'Published to User Feed!',
+        message: `"${item.title || 'Video'}" is live! Navigating to Uploaded Feed...`
+      });
+      loadData(true);
+      setTimeout(() => {
+        router.push('/admin/content/feed');
+      }, 700);
+    } catch (err: any) {
+      console.error("Publish to feed failed:", err);
+      addNotification({
+        type: 'rejected',
+        title: 'Publishing Failed',
+        message: err?.message || 'Failed to publish video to main user feed.'
+      });
+    } finally {
+      setPublishingIds(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, [refreshTrigger]);
@@ -73,53 +114,77 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
 
   // Helper to determine media type
   const checkIsAudio = (item: AdminContent) => {
-    const mediaUrl = ((item as any).media_url || (item as any).audio_url || (item as any).video_url || (item as any).url || item.youtube_url || '').toLowerCase();
-    const category = (item.category || '').toLowerCase();
+    const mediaUrl = ((item as any).media_url || (item as any).mediaUrl || (item as any).audio_url || (item as any).audioUrl || (item as any).video_url || (item as any).videoUrl || (item as any).file_url || (item as any).fileUrl || (item as any).r2_url || (item as any).r2Url || (item as any).url || item.youtube_url || '').toLowerCase();
+    const category = (item.category || (item as any).category_name || (item as any).categoryName || '').toLowerCase();
     const isAudioExt = mediaUrl.endsWith('.mp3') || mediaUrl.endsWith('.wav') || mediaUrl.endsWith('.aac') || mediaUrl.endsWith('.flac') || mediaUrl.endsWith('.m4a') || mediaUrl.endsWith('.ogg');
-    return isAudioExt || category === 'music' || category === 'audio' || (item as any).media_type === 'audio';
+    return isAudioExt || category === 'music' || category === 'audio' || (item as any).media_type === 'audio' || (item as any).mediaType === 'audio';
   };
 
-  // Filtered & Sorted items - ALL direct media files (audio & video), excluding YouTube links
+  // Count of published items (for the "view in feed" nudge)
+  const publishedCount = useMemo(() => contentList.filter(item => item.status === 'published').length, [contentList]);
+
+  // Filtered & Sorted items - ALL direct media files (audio & video), excluding YouTube links and published items
   const processedItems = useMemo(() => {
     const cloudflareMediaOnly = contentList.filter(item => {
-      const mediaUrl = (item as any).media_url || (item as any).audio_url || (item as any).video_url || (item as any).url || item.youtube_url;
-      const isExternalYouTube = isYouTubeUrl(mediaUrl);
-      const isCloudflareSource = item.source_type === 'admin' || (item as any).storage_provider === 'cloudflare' || (mediaUrl && !isExternalYouTube);
+      const mediaUrl = (item as any).media_url || (item as any).mediaUrl || (item as any).audio_url || (item as any).audioUrl || (item as any).video_url || (item as any).videoUrl || (item as any).file_url || (item as any).fileUrl || (item as any).r2_url || (item as any).r2Url || (item as any).stream_url || (item as any).streamUrl || (item as any).url || item.youtube_url || '';
+      const isExternalYouTube = isYouTubeUrl(mediaUrl) || (item.youtube_url && isYouTubeUrl(item.youtube_url) && (item as any).source_type === 'youtube');
+      
+      const sourceType = (item as any).source_type || '';
+      const isCloudflareSource = 
+        sourceType === 'native' || 
+        sourceType === 'admin' || 
+        sourceType === 'cloudflare' || 
+        sourceType === 'upload' || 
+        sourceType === 'direct' || 
+        (item as any).storage_provider === 'cloudflare' || 
+        (Boolean(mediaUrl) && !isExternalYouTube);
 
-      return isCloudflareSource && !isExternalYouTube;
+      // Published items move to the Uploaded Feed — hide them here
+      const isPublished = item.status === 'published';
+
+      return isCloudflareSource && !isExternalYouTube && !isPublished;
     });
 
     const filtered = cloudflareMediaOnly.filter(item => {
-      const artist = getArtistDetails(item.artist_id);
-      const searchString = `${item.title || ''} ${artist?.name || ''} ${item.author_name || ''} ${item.genre || ''}`.toLowerCase();
+      const artist = getArtistDetails(item.artist_id || (item as any).artistId || (item as any).creator_id || (item as any).creatorId);
+      const titleStr = item.title || (item as any).name || (item as any).video_title || (item as any).videoTitle || '';
+      const authorStr = item.author_name || (item as any).authorName || (item as any).creator_name || (item as any).creatorName || '';
+      const genreStr = item.genre || (item as any).genre_name || '';
+      const searchString = `${titleStr} ${artist?.name || ''} ${authorStr} ${genreStr}`.toLowerCase();
       const matchesSearch = searchString.includes(searchTerm.toLowerCase());
       
-      const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-      
+      const isAudio = checkIsAudio(item);
+      const matchesFileType = (() => {
+        if (fileTypeFilter === 'all') return true;
+        if (fileTypeFilter === 'audio') return isAudio;
+        if (fileTypeFilter === 'video') return !isAudio;
+        return true;
+      })();
+
       const matchesCategory = (() => {
         if (categoryFilter === 'All') return true;
-        const itemCat = (item.category || '').toLowerCase().trim();
+        const itemCat = (item.category || (item as any).category_name || (item as any).categoryName || '').toLowerCase().trim();
         const filterCat = categoryFilter.toLowerCase().trim();
-        const itemGenre = (item.genre || '').toLowerCase().trim();
+        const itemGenre = (item.genre || (item as any).genre_name || '').toLowerCase().trim();
 
         if (filterCat === 'music') {
-          return itemCat === 'music' || itemCat === 'audio' || checkIsAudio(item);
+          return itemCat === 'music' || itemCat === 'audio' || isAudio;
         }
         if (filterCat === 'video') {
-          return itemCat === 'video' || !checkIsAudio(item);
+          return itemCat === 'video' || !isAudio;
         }
         return itemCat === filterCat || itemCat.includes(filterCat) || itemGenre.includes(filterCat);
       })();
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch && matchesFileType && matchesCategory;
     });
 
     return filtered.sort((a, b) => {
-      const timeA = new Date(a.created_at || a.published_at || 0).getTime();
-      const timeB = new Date(b.created_at || b.published_at || 0).getTime();
+      const timeA = new Date(a.created_at || (a as any).createdAt || (a as any).uploaded_at || (a as any).uploadedAt || a.published_at || 0).getTime();
+      const timeB = new Date(b.created_at || (b as any).createdAt || (b as any).uploaded_at || (b as any).uploadedAt || b.published_at || 0).getTime();
       return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
     });
-  }, [contentList, artists, searchTerm, statusFilter, categoryFilter, sortOrder]);
+  }, [contentList, artists, searchTerm, fileTypeFilter, categoryFilter, sortOrder]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return 'N/A';
@@ -139,14 +204,14 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         <div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Disc size={22} className="text-red-500 animate-spin-slow" />
-            Uploaded Cloudflare Media Files (Audio & Video)
+            Uploaded Media
             <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
               {processedItems.length} {processedItems.length === 1 ? 'file' : 'files'}
             </span>
           </h2>
           <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
             <ShieldCheck size={14} className="text-green-400 shrink-0" />
-            <span>Strictly displaying verified Cloudflare audio & video media files via bearer authenticated <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">/api/admin/content</code></span>
+            <span>Contains uploaded videos in draft <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">Drafts</code></span>
           </p>
         </div>
 
@@ -174,6 +239,17 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          {/* File Type Filter */}
+          <select
+            value={fileTypeFilter}
+            onChange={(e) => setFileTypeFilter(e.target.value as any)}
+            className="bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
+          >
+            <option value="all">File: All Types</option>
+            <option value="video">File: Video</option>
+            <option value="audio">File: Audio</option>
+          </select>
+
           {/* Category Filter */}
           <select
             value={categoryFilter}
@@ -181,24 +257,14 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
             className="bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
           >
             <option value="All">All Categories</option>
-            <option value="Music">Music (Audio)</option>
-            <option value="Video">Video</option>
             <option value="Culture">Culture</option>
+            <option value="Music">Music</option>
             <option value="Sport">Sport</option>
             <option value="Comedy">Comedy</option>
             <option value="News">News</option>
             <option value="Geography/Nature">Geography/Nature</option>
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
-          >
-            <option value="all">All Status</option>
-            <option value="published">Published</option>
-            <option value="draft">Drafts</option>
+            <option value="Video">Video</option>
+            <option value="Documentary">Documentary</option>
           </select>
 
           {/* Date Sort Toggle */}
@@ -229,10 +295,22 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       ) : processedItems.length === 0 ? (
         <div className="text-center py-14 bg-gray-900/40 rounded-2xl border border-gray-800 border-dashed p-6">
           <Disc className="mx-auto text-gray-600 mb-3" size={36} />
-          <h3 className="text-base font-semibold text-white">No Cloudflare Media Files Found</h3>
+          <h3 className="text-base font-semibold text-white">
+            {publishedCount > 0 ? 'All uploads have been published' : 'No Cloudflare Media Files Found'}
+          </h3>
           <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
-            No direct Cloudflare media file uploads (audio or video) match your search query or filter criteria. YouTube links have been excluded.
+            {publishedCount > 0
+              ? `${publishedCount} item${publishedCount > 1 ? 's have' : ' has'} been published to the user feed and moved to Uploaded Feed. Upload new content or adjust filters.`
+              : 'No direct Cloudflare media file uploads (audio or video) match your search query or filter criteria. YouTube links have been excluded.'}
           </p>
+          {publishedCount > 0 && (
+            <a
+              href="/admin/content/feed"
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-semibold transition-all"
+            >
+              View Uploaded Feed →
+            </a>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -345,9 +423,29 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       <span className="inline-flex items-center gap-1 font-medium">
                         <Clock size={10} /> Uploaded: {formatDate(item.created_at || item.published_at)}
                       </span>
-                      <span className="text-green-400/90 font-medium flex items-center gap-1">
-                        <ShieldCheck size={10} /> Cloudflare Secured
-                      </span>
+                      {item.status === 'published' ? (
+                        <span className="text-emerald-400 font-bold flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[10px] shadow-sm">
+                          <CheckCircle size={12} className="text-emerald-400" /> Published to Feed
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handlePublishItemToFeed(item)}
+                          disabled={publishingIds.has(item.id)}
+                          className="relative group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-900/90 hover:bg-gray-950 text-gray-200 hover:text-white text-[11px] font-semibold transition-all duration-200 border border-gray-800 hover:border-red-500 hover:shadow-md hover:shadow-red-500/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                        >
+                          {publishingIds.has(item.id) ? (
+                            <>
+                              <Loader2 size={12} className="animate-spin text-red-500" />
+                              <span>Publishing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Send size={11} className="text-gray-400 group-hover/btn:text-red-500 transition-colors group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                              <span>Publish to Feed</span>
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
