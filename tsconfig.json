@@ -26,8 +26,6 @@
         "name": "next"
       }
     ],
-    "ignoreDeprecations": "5.0",
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"

@@ -35,8 +35,13 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
         <div className="h-full flex flex-col bg-gray-900 border-r border-gray-800/80 text-gray-300">
             {/* Header Badge */}
             <div className="px-5 py-5 flex items-center space-x-3.5 border-b border-gray-800/60">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-md shadow-red-900/30">
-                    <ShieldCheck className="text-white" size={19} />
+                <div className="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-md">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Shield Outline in Black */}
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Checkmark in Brand Red */}
+                        <path d="M9 12l2 2 4-4" stroke="#e50914" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                 </div>
                 <div>
                     <h2 className="text-white font-bold text-xs tracking-wider uppercase">ADMIN PORTAL</h2>

@@ -8,11 +8,12 @@ const metadataSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be 100 characters or less'),
   description: z.string().max(1000, 'Description must be 1000 characters or less').optional(),
   language: z.enum(['English', 'French', 'Pidgin', 'Camfranglais', 'Local Dialect'], {
-    errorMap: () => ({ message: 'Please select a valid language' })
+    message: 'Please select a valid language'
   }),
   visibility: z.enum(['Public', 'Unlisted', 'Private']),
-  age_restriction: z.boolean().default(false),
-  tags: z.array(z.string()).max(10, 'Maximum of 10 tags allowed').default([])
+  age_restriction: z.boolean(),
+  is_reel: z.boolean().optional(),
+  tags: z.array(z.string()).max(10, 'Maximum of 10 tags allowed')
 });
 
 export type MetadataFormData = z.infer<typeof metadataSchema>;
@@ -41,6 +42,7 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({ initialData, onNext,
       language: initialData.language || 'English',
       visibility: initialData.visibility || 'Public',
       age_restriction: initialData.age_restriction || false,
+      is_reel: initialData.is_reel || false,
       tags: initialData.tags || [],
     },
     mode: 'onChange'
@@ -151,6 +153,30 @@ export const MetadataForm: React.FC<MetadataFormProps> = ({ initialData, onNext,
               <div>
                 <span className="label-text font-bold text-lg">Age Restriction (18+)</span>
                 <p className="text-sm text-base-content/60 mt-1">Enable this if the content is only suitable for mature audiences.</p>
+              </div>
+            </label>
+          </div>
+
+          <div className="form-control w-full mt-4 p-5 bg-base-200/50 rounded-2xl border border-base-content/5">
+            <label className="label cursor-pointer justify-start gap-5">
+              <Controller
+                name="is_reel"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    type="checkbox"
+                    className="toggle toggle-primary toggle-lg"
+                    checked={field.value || false}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+              <div>
+                <span className="label-text font-bold text-lg flex items-center gap-2">
+                  <span>Is Reel / Short Video?</span>
+                  <span className="badge badge-accent badge-sm font-semibold uppercase">Reel / Shorts</span>
+                </span>
+                <p className="text-sm text-base-content/60 mt-1"> Enable if video is to be published as reel on the user feed.</p>
               </div>
             </label>
           </div>

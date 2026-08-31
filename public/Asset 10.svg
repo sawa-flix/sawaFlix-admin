@@ -3,13 +3,13 @@
   <defs>
     <style>
       /* White text for dark backgrounds */
-      .cls-1 { fill: #fff; }
-      /* White play triangle */
-      .cls-2 { fill: #ffffff; }
-      /* White text letters (was dark #1e0507, now white) */
+      .cls-1 { fill: #000000; }
+      /* Red play triangle */
+      .cls-2 { fill: #e50914; }
+      /* White text letters */
       .cls-3 { fill: #ffffff; }
-      /* Red icon square background (brand red) */
-      .cls-4 { fill: #e50914; }
+      /* White icon square background */
+      .cls-4 { fill: #ffffff; }
     </style>
   </defs>
   <g id="Layer_1-2" data-name="Layer 1">

@@ -48,10 +48,13 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
             Your video has been published successfully and is now live in your media catalog.
           </p>
 
-          <div>
-            <button className="btn btn-primary btn-wide btn-lg shadow-lg shadow-primary/30" onClick={onReset}>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button className="btn btn-primary btn-lg shadow-lg shadow-primary/30" onClick={onReset}>
               Upload Another Video
             </button>
+            <a href="/admin/content/feed" className="btn btn-outline btn-lg border-gray-700 hover:border-red-500 text-white">
+              View in Uploaded Feed →
+            </a>
           </div>
         </div>
       </div>
@@ -151,12 +154,16 @@ export const ReviewCard: React.FC<ReviewCardProps> = ({
               ← Back to Category
             </button>
             {isFailed ? (
-              <button type="button" className="btn btn-primary px-12 shadow-lg" onClick={onPublish}>
+              <button type="button" className="btn btn-error px-12 shadow-lg font-bold" onClick={onPublish}>
                 Retry Upload
               </button>
             ) : (
-              <button type="button" className="btn btn-primary px-12 shadow-lg shadow-primary/20 text-lg h-12" onClick={onPublish}>
-                Publish Now
+              <button 
+                type="button" 
+                className="group/btn inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-gray-900 hover:bg-gray-950 text-gray-200 hover:text-white font-bold text-base transition-all duration-200 border border-gray-800 hover:border-red-500 hover:shadow-lg hover:shadow-red-500/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer" 
+                onClick={onPublish}
+              >
+                <span>Publish Now</span>
               </button>
             )}
           </div>
