@@ -18,7 +18,7 @@ import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
 import { createClient } from '@/utils/supabase/client';
 import { getFriendlyError } from '@/utils/errorMessages';
 
-const LIVEURL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'https://sawaflix-admin-backend.onrender.com';
+const LIVEURL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
 const supabase = createClient();
 
 interface VerificationItem {

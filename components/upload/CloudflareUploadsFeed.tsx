@@ -296,12 +296,12 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         <div className="text-center py-14 bg-gray-900/40 rounded-2xl border border-gray-800 border-dashed p-6">
           <Disc className="mx-auto text-gray-600 mb-3" size={36} />
           <h3 className="text-base font-semibold text-white">
-            {publishedCount > 0 ? 'All uploads have been published' : 'No Cloudflare Media Files Found'}
+            {publishedCount > 0 ? 'All uploads have been published' : 'No Uploaded Media Found'}
           </h3>
           <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
             {publishedCount > 0
               ? `${publishedCount} item${publishedCount > 1 ? 's have' : ' has'} been published to the user feed and moved to Uploaded Feed. Upload new content or adjust filters.`
-              : 'No direct Cloudflare media file uploads (audio or video) match your search query or filter criteria. YouTube links have been excluded.'}
+              : 'No direct media uploads (audio or video) match your search query or filter.'}
           </p>
           {publishedCount > 0 && (
             <a

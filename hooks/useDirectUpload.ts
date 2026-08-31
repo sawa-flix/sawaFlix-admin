@@ -66,7 +66,7 @@ export const useDirectUpload = () => {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       }
 
-      const backendUrl = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'https://sawaflix-admin-backend.onrender.com';
+      const backendUrl = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
       const presignResponse = await fetch(`${backendUrl}/api/admin/upload/presign`, {
         method: 'POST',
         headers,

@@ -37,7 +37,7 @@ export interface AdminContent {
 // Main sawaflix-backend (feed etc.)
 const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
 // Admin-specific backend (verifications, upload, content management)
-const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'https://sawaflix-admin-backend.onrender.com';
+const ADMIN_API_URL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
 const supabase = createClient();
 
 const getAuthHeaders = async () => {
