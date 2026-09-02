@@ -88,24 +88,42 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
 
   const getPlayUrl = (item: AdminContent): string => {
     if (!item) return '';
-    const url = 
-      (item as any).media_url || 
-      (item as any).mediaUrl || 
-      (item as any).video_url || 
-      (item as any).videoUrl || 
-      (item as any).audio_url || 
-      (item as any).audioUrl || 
-      (item as any).hls_url || 
-      (item as any).hlsUrl || 
-      (item as any).stream_playback_url ||
-      (item as any).stream_url || 
-      (item as any).playback_url || 
-      (item as any).file_url || 
-      (item as any).r2_url || 
-      (item as any).url || 
-      item.youtube_url || 
-      '';
-    return typeof url === 'string' ? url.trim() : '';
+
+    const candidates: string[] = [
+      (item as any).media_url, (item as any).mediaUrl,
+      (item as any).video_url, (item as any).videoUrl,
+      (item as any).audio_url, (item as any).audioUrl,
+      (item as any).hls_url, (item as any).hlsUrl,
+      (item as any).stream_playback_url,
+      (item as any).stream_url,
+      (item as any).playback_url,
+      (item as any).file_url,
+      (item as any).r2_url,
+      (item as any).url,
+      item.youtube_url,
+    ].filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+     .map(u => u.trim());
+
+    const isBrokenR2 = (u: string) =>
+      u.includes('r2.cloudflarestorage.com') ||
+      u.includes('X-Amz-Credential=%2F') ||
+      u.includes('X-Amz-Credential=');
+
+    const isPlayable = (u: string) =>
+      u.includes('cloudinary.com') ||
+      u.includes('youtube.com') ||
+      u.includes('youtu.be') ||
+      (u.startsWith('http') && !isBrokenR2(u));
+
+    // 1st pass: prefer Cloudinary or YouTube
+    const best = candidates.find(u => u.includes('cloudinary.com') || u.includes('youtube.com') || u.includes('youtu.be'));
+    if (best) return best;
+
+    // 2nd pass: any non-broken playable stream
+    const playable = candidates.find(u => isPlayable(u));
+    if (playable) return playable;
+
+    return candidates[0] || '';
   };
 
   // Filter logic

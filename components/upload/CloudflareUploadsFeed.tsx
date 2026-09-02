@@ -108,37 +108,45 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
 
   const getMediaUrl = (item: any): string => {
     if (!item) return '';
-    let url = 
-      item.media_url || 
-      item.mediaUrl || 
-      item.video_url || 
-      item.videoUrl || 
-      item.audio_url || 
-      item.audioUrl || 
-      item.hls_url || 
-      item.hlsUrl || 
-      item.stream_playback_url ||
-      item.streamPlaybackUrl ||
-      item.stream_url || 
-      item.streamUrl || 
-      item.playback_url || 
-      item.playbackUrl ||
-      item.file_url || 
-      item.fileUrl || 
-      item.r2_url || 
-      item.r2Url || 
-      item.url || 
-      item.youtube_url || 
-      item.youtubeUrl ||
-      '';
-    if (typeof url === 'string') {
-      url = url.trim();
-      if (url.includes('sawaflix-videos..r2.cloudflarestorage.com')) {
-        url = url.replace('sawaflix-videos..r2.cloudflarestorage.com', 'sawaflix-videos.86d2d5e51bf3a4757402848d183da2ea.r2.cloudflarestorage.com');
-      }
-      return url;
-    }
-    return '';
+
+    // Collect ALL candidate URLs from every possible field
+    const candidates: string[] = [
+      item.media_url, item.mediaUrl,
+      item.video_url, item.videoUrl,
+      item.audio_url, item.audioUrl,
+      item.hls_url, item.hlsUrl,
+      item.stream_playback_url, item.streamPlaybackUrl,
+      item.stream_url, item.streamUrl,
+      item.playback_url, item.playbackUrl,
+      item.file_url, item.fileUrl,
+      item.url,
+      item.youtube_url, item.youtubeUrl,
+    ].filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+     .map(u => u.trim());
+
+    // Helper: is this a broken R2 URL we can't play?
+    const isBrokenR2 = (u: string) =>
+      u.includes('r2.cloudflarestorage.com') ||
+      u.includes('X-Amz-Credential=%2F') ||
+      u.includes('X-Amz-Credential=');
+
+    // Helper: is this a known-good playable URL?
+    const isPlayable = (u: string) =>
+      u.includes('cloudinary.com') ||
+      u.includes('youtube.com') ||
+      u.includes('youtu.be') ||
+      (u.startsWith('http') && !isBrokenR2(u));
+
+    // 1st pass: prefer Cloudinary or YouTube (known to stream reliably)
+    const best = candidates.find(u => u.includes('cloudinary.com') || u.includes('youtube.com') || u.includes('youtu.be'));
+    if (best) return best;
+
+    // 2nd pass: any playable URL that is NOT a broken R2 presigned URL
+    const playable = candidates.find(u => isPlayable(u));
+    if (playable) return playable;
+
+    // 3rd pass: last resort, return the first candidate even if R2
+    return candidates[0] || '';
   };
 
   const checkIsAudio = (item: AdminContent) => {

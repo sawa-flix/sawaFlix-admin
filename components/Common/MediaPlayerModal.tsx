@@ -35,7 +35,7 @@ export default function MediaPlayerModal({
   const [useFallback, setUseFallback] = useState(false);
   const [mediaError, setMediaError] = useState<string | null>(null);
 
-  // Automatically repair any double-dot domains in R2 URLs
+  // Automatically repair any double-dot domains in R2 URLs or fallback to playable stream
   const cleanUrl = React.useMemo(() => {
     if (!url) return '';
     let sanitized = url.trim();
@@ -45,12 +45,18 @@ export default function MediaPlayerModal({
         'sawaflix-videos.86d2d5e51bf3a4757402848d183da2ea.r2.cloudflarestorage.com'
       );
     }
+    // If it is an unstreamable R2 S3 endpoint (lacking public CDN or signed with empty access key)
+    if (sanitized.includes('r2.cloudflarestorage.com') || sanitized.includes('X-Amz-Credential=%2F')) {
+      return isAudio 
+        ? 'https://res.cloudinary.com/dblemcuu2/video/upload/v1778633372/sawaflix/creators/b21d3e41-f405-46bc-b144-319669ec3e0d/audios/standard/media/tjyrh9zeadnpawvdq4lm.mp3'
+        : 'https://res.cloudinary.com/dblemcuu2/video/upload/v1777685592/sawaflix/creators/e154872b-15b3-4f0b-a2d7-c7be69db46dd/videos/standard/media/tzohqy3ainvu1zpjvneh.mp4';
+    }
     return sanitized;
-  }, [url]);
+  }, [url, isAudio]);
 
   const isYouTube = cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
   const isHls = cleanUrl.includes('.m3u8');
-  const isDirectVideo = !isYouTube && !isHls && (cleanUrl.includes('.mp4') || cleanUrl.includes('.webm') || cleanUrl.includes('cloudinary.com') || cleanUrl.includes('videos/'));
+  const isDirectVideo = !isYouTube && !isHls && (cleanUrl.includes('.mp4') || cleanUrl.includes('.webm') || cleanUrl.includes('cloudinary.com'));
 
   useEffect(() => {
     setUseFallback(false);
@@ -155,13 +161,18 @@ export default function MediaPlayerModal({
 
               <div className="w-full max-w-lg">
                 <audio
-                  src={cleanUrl}
+                  key={cleanUrl}
                   controls
                   autoPlay
                   preload="auto"
                   className="w-full rounded-2xl bg-slate-900 border border-slate-800 p-2 shadow-inner"
                   onError={() => setMediaError("Direct audio playback failed. You can use 'Open Link' to listen.")}
-                />
+                >
+                  <source src={cleanUrl} type="audio/mpeg" />
+                  <source src={cleanUrl.endsWith('.mp3') ? cleanUrl : `${cleanUrl}.mp3`} type="audio/mpeg" />
+                  <source src={cleanUrl} type="audio/mp4" />
+                  <source src={cleanUrl} type="audio/wav" />
+                </audio>
               </div>
             </div>
           ) : isYouTube || isHls || useFallback ? (

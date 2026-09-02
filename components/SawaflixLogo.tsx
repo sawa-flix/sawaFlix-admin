@@ -40,12 +40,12 @@ export const SawaflixIcon: React.FC<{ size?: number; className?: string }> = ({ 
     </div>
 );
 
-/** Loading spinner using the official loaderLogo.png */
+/** Loading spinner using the official loaderLogo.png - spins continuously going round */
 export const SawaflixLoader: React.FC<{ size?: number; className?: string; text?: string }> = ({ size = 64, className = "", text }) => (
     <div className={`flex flex-col items-center justify-center gap-3.5 ${className}`}>
         <div className="relative flex items-center justify-center">
-            {/* Soft pulsing glow behind */}
-            <div className="absolute inset-0 rounded-full bg-red-500/15 blur-md animate-pulse" />
+            {/* Glowing red accent behind */}
+            <div className="absolute inset-0 rounded-full bg-red-500/10 blur-sm pointer-events-none" />
             <Image
                 src="/loaderLogo.png"
                 alt="Loading..."
@@ -53,11 +53,12 @@ export const SawaflixLoader: React.FC<{ size?: number; className?: string; text?
                 height={size}
                 priority
                 unoptimized
-                className="relative z-10 animate-pulse drop-shadow-md object-contain"
+                className="animate-spin object-contain drop-shadow-md"
+                style={{ animationDuration: '1.1s' }}
             />
         </div>
         {text && (
-            <p className="text-xs font-semibold text-slate-600 tracking-wide animate-pulse">
+            <p className="text-xs font-semibold text-slate-600 tracking-wide">
                 {text}
             </p>
         )}

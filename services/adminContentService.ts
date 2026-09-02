@@ -144,98 +144,120 @@ export async function addArtistToTop20(artistId: string): Promise<boolean> {
 // -------------------------------------------------------------
 
 export async function getAdminContent(): Promise<AdminContent[]> {
-    let list: any[] = [];
+    const listMap = new Map<string, AdminContent>();
+
+    // 1. Fetch all real videos & music tracks from Supabase contents table
+    try {
+        const { data: dbContents, error } = await supabase
+            .from('contents')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (!error && Array.isArray(dbContents)) {
+            for (const c of dbContents) {
+                const isAudio = c.content_type === 'audio' || (c.category || '').toLowerCase() === 'music';
+                const mediaUrl = c.media_url || c.hls_url || '';
+                listMap.set(c.id, {
+                    id: c.id,
+                    title: c.title || 'Untitled Media',
+                    author_name: c.creator_name || 'Creator',
+                    artist_id: c.creator_id,
+                    category: c.category || (isAudio ? 'Music' : 'Video'),
+                    genre: c.genre || (isAudio ? 'Afrobeats' : 'General'),
+                    region: c.region || 'Cameroon',
+                    media_url: mediaUrl,
+                    thumbnail_url: c.cover_url || c.thumbnail_url || '',
+                    status: c.status || 'published',
+                    created_at: c.created_at || new Date().toISOString(),
+                    source_type: isAudio ? 'audio' : 'native'
+                });
+            }
+        }
+    } catch (sbErr) {
+        console.warn("Supabase contents fetch error:", sbErr);
+    }
+
+    // 2. Fetch native admin uploads from backend API
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${ADMIN_API_URL}/api/admin/content`, { headers });
         if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data)) list = data;
-            else list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
+            const backendItems = Array.isArray(data) ? data : (data.data || data.content || data.videos || data.uploads || []);
+            for (const b of backendItems) {
+                if (b && b.id && !listMap.has(b.id)) {
+                    listMap.set(b.id, {
+                        ...b,
+                        status: b.status || 'published',
+                        created_at: b.created_at || new Date().toISOString()
+                    });
+                }
+            }
         }
     } catch (err) {
-        console.warn("Backend getAdminContent failed, trying Supabase fallback:", err);
+        console.warn("Backend getAdminContent failed:", err);
     }
 
-    // If backend returned nothing or failed, fallback to Supabase contents table
-    if (!list || list.length === 0) {
-        try {
-            const { data: dbContents, error } = await supabase
-                .from('contents')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(50);
-            
-            if (!error && Array.isArray(dbContents) && dbContents.length > 0) {
-                list = dbContents.map((c: any) => ({
-                    id: c.id,
-                    title: c.title || 'Untitled Media',
-                    author_name: c.creator_name || 'Admin Upload',
-                    artist_id: c.creator_id,
-                    category: c.category || 'Video',
-                    genre: c.genre || 'General',
-                    region: c.region || 'Africa',
-                    media_url: c.media_url || c.hls_url || '',
-                    thumbnail_url: c.cover_url || c.thumbnail_url || '',
-                    status: c.status || 'published',
-                    created_at: c.created_at,
-                    source_type: 'native'
-                }));
-            }
-        } catch (sbErr) {
-            console.warn("Supabase contents fallback error:", sbErr);
-        }
-    }
-
-    return Array.isArray(list) ? list : [];
+    return Array.from(listMap.values());
 }
 
 /** Fetch only published admin uploads — used by the Uploaded Feed sidebar page */
 export async function getAdminPublishedContent(): Promise<AdminContent[]> {
-    let list: any[] = [];
+    const listMap = new Map<string, AdminContent>();
+
+    try {
+        const { data: dbContents, error } = await supabase
+            .from('contents')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (!error && Array.isArray(dbContents)) {
+            for (const c of dbContents) {
+                const isAudio = c.content_type === 'audio' || (c.category || '').toLowerCase() === 'music';
+                const mediaUrl = c.media_url || c.hls_url || '';
+                listMap.set(c.id, {
+                    id: c.id,
+                    title: c.title || 'Untitled Media',
+                    author_name: c.creator_name || 'Creator',
+                    artist_id: c.creator_id,
+                    category: c.category || (isAudio ? 'Music' : 'Video'),
+                    genre: c.genre || (isAudio ? 'Afrobeats' : 'General'),
+                    region: c.region || 'Cameroon',
+                    media_url: mediaUrl,
+                    thumbnail_url: c.cover_url || c.thumbnail_url || '',
+                    status: 'published',
+                    created_at: c.created_at || new Date().toISOString(),
+                    source_type: isAudio ? 'audio' : 'native'
+                });
+            }
+        }
+    } catch (sbErr) {
+        console.warn("Supabase published fetch error:", sbErr);
+    }
+
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${ADMIN_API_URL}/api/admin/content?status=published`, { headers });
         if (res.ok) {
             const data = await res.json();
-            if (Array.isArray(data)) list = data;
-            else list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
+            const backendItems = Array.isArray(data) ? data : (data.data || data.content || data.videos || data.uploads || []);
+            for (const b of backendItems) {
+                if (b && b.id && !listMap.has(b.id)) {
+                    listMap.set(b.id, {
+                        ...b,
+                        status: 'published',
+                        created_at: b.created_at || new Date().toISOString()
+                    });
+                }
+            }
         }
     } catch (err) {
-        console.warn("Backend getAdminPublishedContent failed, trying Supabase fallback:", err);
+        console.warn("Backend getAdminPublishedContent failed:", err);
     }
 
-    if (!list || list.length === 0) {
-        try {
-            const { data: dbContents, error } = await supabase
-                .from('contents')
-                .select('*')
-                .eq('status', 'published')
-                .order('created_at', { ascending: false })
-                .limit(50);
-            
-            if (!error && Array.isArray(dbContents) && dbContents.length > 0) {
-                list = dbContents.map((c: any) => ({
-                    id: c.id,
-                    title: c.title || 'Untitled Media',
-                    author_name: c.creator_name || 'Admin Upload',
-                    artist_id: c.creator_id,
-                    category: c.category || 'Video',
-                    genre: c.genre || 'General',
-                    region: c.region || 'Africa',
-                    media_url: c.media_url || c.hls_url || '',
-                    thumbnail_url: c.cover_url || c.thumbnail_url || '',
-                    status: 'published',
-                    created_at: c.created_at,
-                    source_type: 'native'
-                }));
-            }
-        } catch (sbErr) {
-            console.warn("Supabase published fallback error:", sbErr);
-        }
-    }
-
-    return Array.isArray(list) ? list : [];
+    return Array.from(listMap.values());
 }
 
 
