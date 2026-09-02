@@ -1,6 +1,7 @@
 import React from 'react';
 import { UploadStatus } from '@/hooks/useDirectUpload';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { SawaflixLoader } from '@/components/SawaflixLogo';
 
 interface UploadProgressProps {
   progress: number;
@@ -17,32 +18,34 @@ export const UploadProgress: React.FC<UploadProgressProps> = ({ progress, status
       case 'completed': return 'Video Published Successfully!';
       case 'failed': return 'Upload Could Not Be Completed';
       default: return 'Initializing...';
-
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-base-200/30 rounded-2xl border border-base-content/5 mt-8 animate-in zoom-in-95 duration-300">
+    <div className="flex flex-col items-center justify-center p-8 bg-slate-50 rounded-2xl border border-slate-200/80 mt-6 animate-in zoom-in-95 duration-300 text-center">
       {status === 'completed' ? (
-        <div className="bg-success/20 p-4 rounded-full mb-4">
-          <CheckCircle className="w-16 h-16 text-success animate-bounce" />
+        <div className="bg-emerald-50 text-emerald-600 border border-emerald-200 p-4 rounded-full mb-4">
+          <CheckCircle className="w-12 h-12 text-emerald-600 animate-bounce" />
         </div>
       ) : (
-        <Loader2 className="w-16 h-16 text-primary mb-6 animate-spin" />
+        <div className="mb-5">
+          <SawaflixLoader size={54} />
+        </div>
       )}
       
-      <h3 className="text-xl font-bold mb-6 text-base-content">{getStatusMessage()}</h3>
+      <h3 className="text-base font-bold mb-4 text-slate-900">{getStatusMessage()}</h3>
       
       {status !== 'completed' && status !== 'failed' && (
-        <div className="w-full max-w-lg">
-          <progress 
-            className="progress progress-primary w-full h-4" 
-            value={status === 'uploading' ? progress : (status === 'confirming' ? 100 : 0)} 
-            max="100"
-          ></progress>
-          <div className="flex justify-between mt-3 text-xs text-base-content/60 font-bold uppercase tracking-wider">
+        <div className="w-full max-w-md">
+          <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-slate-900 rounded-full transition-all duration-300"
+              style={{ width: `${status === 'uploading' ? progress : (status === 'confirming' ? 100 : 0)}%` }}
+            />
+          </div>
+          <div className="flex justify-between mt-2 text-[11px] text-slate-400 font-semibold font-mono">
             <span>0%</span>
-            <span>{status === 'uploading' ? progress : (status === 'confirming' ? 100 : 0)}%</span>
+            <span className="text-slate-700">{status === 'uploading' ? progress : (status === 'confirming' ? 100 : 0)}%</span>
             <span>100%</span>
           </div>
         </div>

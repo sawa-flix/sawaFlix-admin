@@ -629,38 +629,43 @@ export const CategoryFields: React.FC<CategoryFieldsProps> = ({ initialData, onN
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-      <div className="card bg-base-100 border border-base-content/10 shadow-sm text-left">
-        <div className="card-body">
-          <h2 className="card-title text-2xl mb-4">Category Specifics</h2>
-          
-          <div className="form-control w-full mb-6 pb-6 border-b border-base-content/10">
-            <label className="label">
-              <span className="label-text font-medium text-lg">Select Content Category *</span>
-            </label>
-            <select 
-              className="select select-bordered select-lg w-full focus:select-primary"
-              {...register('category')}
-            >
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-xs text-left">
+        <h2 className="text-xl font-bold text-slate-900 mb-6">Category Specifics</h2>
+        
+        <div className="w-full mb-6 pb-6 border-b border-slate-100">
+          <label className="block text-xs font-semibold text-slate-700 mb-2">
+            Select Content Category *
+          </label>
+          <select 
+            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-medium focus:border-slate-400 focus:ring-2 focus:ring-slate-900/10 focus:outline-none transition-all cursor-pointer"
+            {...register('category')}
+          >
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
 
-          <div className="min-h-[250px]">
-             {renderDynamicFields()}
-          </div>
-          
+        <div className="min-h-[220px]">
+           {renderDynamicFields()}
         </div>
       </div>
 
-      <div className="flex justify-between items-center mt-8 pt-4">
-        <button type="button" className="btn btn-ghost" onClick={onBack}>
+      <div className="flex justify-between items-center pt-2">
+        <button 
+          type="button" 
+          className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shadow-2xs cursor-pointer"
+          onClick={onBack}
+        >
           ← Back to Basic Info
         </button>
-        <button type="submit" className="btn btn-primary px-10" disabled={!isValid}>
-          Continue to Review
+        <button 
+          type="submit" 
+          className="px-6 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer" 
+          disabled={!isValid}
+        >
+          Continue to Review →
         </button>
       </div>
     </form>

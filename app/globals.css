@@ -2,12 +2,18 @@
 @plugin "daisyui";
 
 :root {
-  --background: #0B0E14;
-  --foreground: #F8FAFC;
+  --background: #F8F9FB;
+  --foreground: #0F172A;
   --primary: #E50914; /* Netflix-like Red / Design Accent */
-  --secondary: #1E293B;
+  --secondary: #F1F5F9;
   --accent: #E50914;
-  --card-bg: #151C25;
+  --card-bg: #FFFFFF;
+
+  /* Force DaisyUI to use clean light base colors */
+  --color-base-100: #ffffff !important;
+  --color-base-200: #f8fafc !important;
+  --color-base-300: #f1f5f9 !important;
+  --color-base-content: #0f172a !important;
 
   /* Font Families with robust fallbacks */
   --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -16,9 +22,26 @@
   --font-montserrat: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-poppins: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* Force DaisyUI to use our Netflix-like red as the primary color globally */
-  --color-primary: #E50914 !important;
+  --color-primary: #0f172a !important;
   --color-primary-content: #ffffff !important;
+}
+
+[data-theme="light"] {
+  --color-base-100: #ffffff !important;
+  --color-base-200: #f8fafc !important;
+  --color-base-300: #f1f5f9 !important;
+  --color-base-content: #0f172a !important;
+}
+
+/* Ensure all form controls in light theme are clean and crisp */
+.input, .select, .textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: #94a3b8 !important;
+  outline: none !important;
 }
 
 @theme {
