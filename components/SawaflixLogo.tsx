@@ -40,19 +40,27 @@ export const SawaflixIcon: React.FC<{ size?: number; className?: string }> = ({ 
     </div>
 );
 
-/** Loading spinner using the official loader.svg from /logo/loader.svg */
-export const SawaflixLoader: React.FC<{ size?: number; className?: string; text?: string }> = ({ size = 52, className = "", text }) => (
-    <div className={`flex flex-col items-center justify-center gap-3 ${className}`}>
-        <Image
-            src="/logo/loader.svg"
-            alt="Loading..."
-            width={size}
-            height={Math.round(size * (100.41 / 172.09))}
-            priority
-            unoptimized
-            className="animate-pulse drop-shadow-sm"
-        />
-        {text && <p className="text-xs text-slate-500 font-semibold animate-pulse">{text}</p>}
+/** Loading spinner using the official loaderLogo.png */
+export const SawaflixLoader: React.FC<{ size?: number; className?: string; text?: string }> = ({ size = 64, className = "", text }) => (
+    <div className={`flex flex-col items-center justify-center gap-3.5 ${className}`}>
+        <div className="relative flex items-center justify-center">
+            {/* Soft pulsing glow behind */}
+            <div className="absolute inset-0 rounded-full bg-red-500/15 blur-md animate-pulse" />
+            <Image
+                src="/loaderLogo.png"
+                alt="Loading..."
+                width={size}
+                height={size}
+                priority
+                unoptimized
+                className="relative z-10 animate-pulse drop-shadow-md object-contain"
+            />
+        </div>
+        {text && (
+            <p className="text-xs font-semibold text-slate-600 tracking-wide animate-pulse">
+                {text}
+            </p>
+        )}
     </div>
 );
 
