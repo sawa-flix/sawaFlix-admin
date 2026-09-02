@@ -464,7 +464,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectItem(item.id)}
-                          className="rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-500 cursor-pointer"
                         />
                       </td>
 
@@ -472,7 +472,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       <td className="py-3.5 px-4">
                         <div 
                           onClick={handlePlay}
-                          className="relative w-28 aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shrink-0 group/thumb cursor-pointer shadow-2xs"
+                          className="relative w-28 aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 group/thumb cursor-pointer shadow-xs"
                         >
                           {item.thumbnail_url && !item.thumbnail_url.includes('unsplash.com') ? (
                             <img
@@ -489,13 +489,13 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                               className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300 pointer-events-none"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
-                              {isAudio ? <Music size={18} /> : <FileVideo size={18} />}
+                            <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-500">
+                              {isAudio ? <Music size={18} className="text-purple-400" /> : <FileVideo size={18} />}
                             </div>
                           )}
 
                           {/* Duration Badge */}
-                          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold tracking-tight">
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur-xs text-white text-[9px] font-semibold tracking-tight">
                             {duration}
                           </div>
 
@@ -503,10 +503,10 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           {mediaUrl && (
                             <button
                               onClick={() => setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
-                              className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
+                              className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
                             >
-                              <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-white shadow-md hover:scale-110 transition-transform">
-                                <Play size={11} fill="currentColor" className="ml-0.5" />
+                              <div className="w-7 h-7 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-md hover:scale-110 transition-transform">
+                                <Play size={10} fill="currentColor" className="ml-0.5 text-slate-900" />
                               </div>
                             </button>
                           )}
@@ -519,7 +519,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           <div className="flex items-center gap-1.5">
                             <span
                               onClick={() => mediaUrl && setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
-                              className="font-bold text-slate-900 hover:text-red-600 transition-colors cursor-pointer truncate"
+                              className="font-bold text-slate-900 hover:text-slate-600 transition-colors cursor-pointer truncate"
                             >
                               {item.title || 'Live Verified Admin Video'}
                             </span>
@@ -533,10 +533,10 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                             {item.author_name || 'Admin Upload'}
                           </div>
                           <div className="flex items-center gap-1 mt-1">
-                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
                               {isAudio ? 'Audio' : 'Video'}
                             </span>
-                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] font-medium text-slate-500 bg-slate-100/70 px-2 py-0.5 rounded-md border border-slate-200/50">
                               {item.genre || (idx % 2 === 0 ? 'General' : 'BTS')}
                             </span>
                           </div>
@@ -545,7 +545,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
 
                       {/* Category */}
                       <td className="py-3.5 px-4">
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-semibold text-slate-800 text-xs">
                           {item.category || (idx === 0 ? 'Music' : idx === 1 ? 'Comedy' : 'Entertainment')}
                         </span>
                       </td>
@@ -562,12 +562,12 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       <td className="py-3.5 px-4">
                         <div>
                           <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
                               isPublished
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
                                 : idx === 1
-                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                                : 'bg-amber-50 text-amber-600 border-amber-200'
+                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20'
+                                : 'bg-amber-500/10 text-amber-700 border-amber-500/20'
                             }`}
                           >
                             {isPublished ? 'Published' : idx === 1 ? 'Ready' : 'Draft'}
@@ -584,10 +584,10 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           {/* Play Button */}
                           <button
                             onClick={handlePlay}
-                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
                             title="Play media in preview player"
                           >
-                            <Play size={11} className="text-red-600 fill-red-600 ml-0.5" />
+                            <Play size={10} fill="currentColor" className="text-slate-600" />
                             <span>Play</span>
                           </button>
 
@@ -595,7 +595,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                             <button
                               onClick={() => handlePublishItemToFeed(item)}
                               disabled={isPublishing}
-                              className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
                             >
                               {isPublishing ? (
                                 <Loader2 size={12} className="animate-spin" />
@@ -608,10 +608,10 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           {/* Direct Delete Button */}
                           <button
                             onClick={() => setDeletingItem(item)}
-                            className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                             title="Delete Video"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
 
                           {/* Three Dots Menu */}

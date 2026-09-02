@@ -97,15 +97,15 @@ export default function MediaPlayerModal({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-900/95 text-white">
           <div className="flex items-center gap-2.5 min-w-0 pr-4">
-            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+            <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${
               isAudio 
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
-                : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                ? 'bg-purple-500/15 text-purple-200 border border-purple-400/25' 
+                : 'bg-white/10 text-slate-200 border border-white/15 backdrop-blur-md'
             }`}>
-              {isAudio ? <Music size={11} /> : <Video size={11} />}
+              {isAudio ? <Music size={12} className="text-purple-300" /> : <Video size={12} className="text-slate-300" />}
               <span>{isAudio ? 'Audio Track' : 'Video Playback'}</span>
             </span>
-            <h3 className="text-xs sm:text-sm font-bold text-white truncate max-w-md">
+            <h3 className="text-xs sm:text-sm font-semibold text-white/90 truncate max-w-md">
               {title || 'Media Playback'}
             </h3>
           </div>
@@ -225,7 +225,7 @@ export default function MediaPlayerModal({
                   href={cleanUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-lg"
+                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-semibold rounded-xl flex items-center gap-2 shadow-lg transition-colors"
                 >
                   <ExternalLink size={13} />
                   <span>Open Media in Browser</span>
@@ -246,10 +246,10 @@ export default function MediaPlayerModal({
               href={cleanUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-red-400 hover:text-red-300 font-semibold text-xs flex items-center gap-1 cursor-pointer"
+              className="text-slate-300 hover:text-white font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <span>Direct Link</span>
-              <ExternalLink size={11} />
+              <ExternalLink size={12} />
             </a>
           </div>
         </div>

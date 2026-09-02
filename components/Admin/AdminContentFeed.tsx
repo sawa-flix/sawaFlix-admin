@@ -282,22 +282,27 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
             return (
               <div 
                 key={item.id} 
-                className="bg-white border border-slate-200/90 hover:border-slate-300 rounded-2xl p-4 sm:p-5 transition-all shadow-xs flex flex-col sm:flex-row gap-4 group"
+                className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-2xl p-4 sm:p-4.5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col sm:flex-row gap-4 group relative"
               >
                 {/* Thumbnail / Play Preview */}
                 <div 
                   onClick={() => handlePlayItem(item)}
-                  className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-200 cursor-pointer shadow-2xs group/thumb"
+                  className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-950 shrink-0 border border-slate-200/70 cursor-pointer shadow-2xs group/thumb"
                 >
                   {(() => {
                     if (isAudio) {
                       return (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 text-slate-400 relative">
                           {item.thumbnail_url ? (
                             <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover opacity-60" />
                           ) : (
-                            <Music size={28} className="text-red-500" />
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 border border-purple-400/30 flex items-center justify-center">
+                              <Music size={20} className="text-purple-300" />
+                            </div>
                           )}
+                          <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-purple-200 text-[10px] font-semibold border border-purple-400/20">
+                            Audio Track
+                          </span>
                         </div>
                       );
                     }
@@ -329,7 +334,7 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
                     }
 
                     return (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
+                      <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-600">
                         <Video size={24} />
                       </div>
                     );
@@ -339,32 +344,40 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
                   {playUrl && (
                     <button
                       onClick={() => handlePlayItem(item)}
-                      className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      className="absolute inset-0 bg-black/35 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
-                      <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white shadow-md hover:scale-110 transition-transform">
-                        <Play size={13} fill="currentColor" className="ml-0.5" />
+                      <div className="w-9 h-9 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                        <Play size={12} fill="currentColor" className="ml-0.5 text-slate-900" />
                       </div>
                     </button>
                   )}
 
-                  {/* YouTube badge */}
-                  {isYT && (
-                    <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 text-white">YT</span>
-                  )}
+                  {/* Top badges */}
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-1">
+                    {isYT && (
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-900/80 backdrop-blur-sm text-slate-200 border border-white/10">
+                        YouTube
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Info */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                   <div>
-                    {/* Header: Artist and Status & Delete */}
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                    {/* Header: Artist and Status & Actions */}
+                    <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center space-x-2 min-w-0">
-                        {artist?.avatar_url && (
+                        {artist?.avatar_url ? (
                           <img 
                             src={artist.avatar_url} 
                             alt={artist.name} 
-                            className="w-4 h-4 rounded-full object-cover border border-slate-200 shrink-0"
+                            className="w-5 h-5 rounded-full object-cover ring-1 ring-slate-200 shrink-0"
                           />
+                        ) : (
+                          <div className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] flex items-center justify-center ring-1 ring-slate-200 shrink-0">
+                            {(item.author_name || 'A')[0]}
+                          </div>
                         )}
                         <span className="text-xs font-semibold text-slate-700 truncate">
                           {artist?.name || item.author_name || 'Admin Upload'}
@@ -372,34 +385,34 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
                       </div>
                       
                       <div className="flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 shrink-0">
                           Published
                         </span>
                         {/* Play Button */}
                         <button
                           onClick={() => handlePlayItem(item)}
-                          className="px-2 py-1 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-[11px] font-semibold flex items-center gap-1 cursor-pointer shadow-2xs"
+                          className="px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                           title="Play Media"
                         >
-                          <Play size={10} className="text-red-600 fill-red-600" />
+                          <Play size={10} fill="currentColor" className="text-slate-600" />
                           <span>Play</span>
                         </button>
                         {/* Delete Button */}
                         <button
                           onClick={() => setDeletingItem(item)}
-                          className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                           title="Delete Video"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
 
                     {/* Title */}
-                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 mb-2 line-clamp-2">
+                    <h4 className="text-xs sm:text-sm font-bold text-slate-900 mb-2 line-clamp-2 leading-snug">
                       <button 
                         onClick={() => handlePlayItem(item)}
-                        className="text-left hover:text-red-600 transition-colors flex items-center gap-1.5"
+                        className="text-left hover:text-slate-600 transition-colors flex items-center gap-1.5"
                         disabled={!playUrl}
                       >
                         <span>{item.title || 'Untitled Media'}</span>
@@ -413,30 +426,32 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
                   </div>
 
                   {/* Badges & Date footer */}
-                  <div className="space-y-2 mt-2 pt-2 border-t border-slate-100">
+                  <div className="space-y-2 mt-2 pt-2.5 border-t border-slate-100">
                     <div className="flex flex-wrap gap-1.5">
                       {item.category && (
-                        <span className="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-flex items-center gap-1">
-                          <Tag size={10} /> {item.category}
+                        <span className="text-[11px] font-medium text-slate-600 bg-slate-100/80 px-2.5 py-0.5 rounded-lg border border-slate-200/60 inline-flex items-center gap-1">
+                          <Tag size={10} className="text-slate-400" /> {item.category}
                         </span>
                       )}
                       {item.genre && (
-                        <span className="text-[10px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        <span className="text-[11px] font-medium text-slate-500 bg-slate-100/70 px-2.5 py-0.5 rounded-lg border border-slate-200/60">
                           {item.genre}
                         </span>
                       )}
                       {isAudio && (
-                        <span className="text-[10px] text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 inline-flex items-center gap-1">
-                          <Music size={9} /> Audio
+                        <span className="text-[11px] font-medium text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-lg border border-purple-200/60 inline-flex items-center gap-1">
+                          <Music size={10} /> Audio
                         </span>
                       )}
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] text-slate-400">
-                      <span className="inline-flex items-center gap-1 font-medium">
-                        <Clock size={10} /> {formatDate(item.created_at)}
+                    <div className="flex justify-between items-center text-[11px] text-slate-400">
+                      <span className="inline-flex items-center gap-1.5 font-medium">
+                        <Clock size={11} className="text-slate-400" /> {formatDate(item.created_at)}
                       </span>
-                      <span className="text-slate-400 capitalize">{(item as any).source_type || 'native'}</span>
+                      <span className="text-[10px] font-mono uppercase px-1.5 py-0.5 bg-slate-50 rounded border border-slate-200/50 text-slate-500">
+                        {(item as any).source_type || 'native'}
+                      </span>
                     </div>
                   </div>
                 </div>
