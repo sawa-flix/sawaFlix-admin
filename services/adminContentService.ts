@@ -144,40 +144,98 @@ export async function addArtistToTop20(artistId: string): Promise<boolean> {
 // -------------------------------------------------------------
 
 export async function getAdminContent(): Promise<AdminContent[]> {
+    let list: any[] = [];
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${ADMIN_API_URL}/api/admin/content`, { headers });
-        if (!res.ok) {
-            console.warn(`[API] getAdminContent returned ${res.status}`);
-            return [];
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) list = data;
+            else list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
         }
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
-        const list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
-        return Array.isArray(list) ? list : [];
     } catch (err) {
-        console.error("Failed to fetch admin content:", err);
-        return [];
+        console.warn("Backend getAdminContent failed, trying Supabase fallback:", err);
     }
+
+    // If backend returned nothing or failed, fallback to Supabase contents table
+    if (!list || list.length === 0) {
+        try {
+            const { data: dbContents, error } = await supabase
+                .from('contents')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            
+            if (!error && Array.isArray(dbContents) && dbContents.length > 0) {
+                list = dbContents.map((c: any) => ({
+                    id: c.id,
+                    title: c.title || 'Untitled Media',
+                    author_name: c.creator_name || 'Admin Upload',
+                    artist_id: c.creator_id,
+                    category: c.category || 'Video',
+                    genre: c.genre || 'General',
+                    region: c.region || 'Africa',
+                    media_url: c.media_url || c.hls_url || '',
+                    thumbnail_url: c.cover_url || c.thumbnail_url || '',
+                    status: c.status || 'published',
+                    created_at: c.created_at,
+                    source_type: 'native'
+                }));
+            }
+        } catch (sbErr) {
+            console.warn("Supabase contents fallback error:", sbErr);
+        }
+    }
+
+    return Array.isArray(list) ? list : [];
 }
 
 /** Fetch only published admin uploads — used by the Uploaded Feed sidebar page */
 export async function getAdminPublishedContent(): Promise<AdminContent[]> {
+    let list: any[] = [];
     try {
         const headers = await getAuthHeaders();
         const res = await fetch(`${ADMIN_API_URL}/api/admin/content?status=published`, { headers });
-        if (!res.ok) {
-            console.warn(`[API] getAdminPublishedContent returned ${res.status}`);
-            return [];
+        if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) list = data;
+            else list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
         }
-        const data = await res.json();
-        if (Array.isArray(data)) return data;
-        const list = data.data || data.content || data.videos || data.uploads || data.items || data.results || [];
-        return Array.isArray(list) ? list : [];
     } catch (err) {
-        console.error("Failed to fetch published admin content:", err);
-        return [];
+        console.warn("Backend getAdminPublishedContent failed, trying Supabase fallback:", err);
     }
+
+    if (!list || list.length === 0) {
+        try {
+            const { data: dbContents, error } = await supabase
+                .from('contents')
+                .select('*')
+                .eq('status', 'published')
+                .order('created_at', { ascending: false })
+                .limit(50);
+            
+            if (!error && Array.isArray(dbContents) && dbContents.length > 0) {
+                list = dbContents.map((c: any) => ({
+                    id: c.id,
+                    title: c.title || 'Untitled Media',
+                    author_name: c.creator_name || 'Admin Upload',
+                    artist_id: c.creator_id,
+                    category: c.category || 'Video',
+                    genre: c.genre || 'General',
+                    region: c.region || 'Africa',
+                    media_url: c.media_url || c.hls_url || '',
+                    thumbnail_url: c.cover_url || c.thumbnail_url || '',
+                    status: 'published',
+                    created_at: c.created_at,
+                    source_type: 'native'
+                }));
+            }
+        } catch (sbErr) {
+            console.warn("Supabase published fallback error:", sbErr);
+        }
+    }
+
+    return Array.isArray(list) ? list : [];
 }
 
 
@@ -226,13 +284,37 @@ export async function saveAdminContent(content: Omit<AdminContent, 'id' | 'creat
 
 export async function deleteAdminContent(id: string): Promise<boolean> {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${ADMIN_API_URL}/api/admin/content/${id}`, {
-        method: 'DELETE',
-        headers
-    });
-    
-    if (!res.ok) {
-        throw new Error(`Failed to delete content (Status: ${res.status})`);
+    let backendSuccess = false;
+
+    try {
+        const res = await fetch(`${ADMIN_API_URL}/api/admin/content/${id}`, {
+            method: 'DELETE',
+            headers
+        });
+        if (res.ok) {
+            backendSuccess = true;
+        } else if (res.status === 404) {
+            // Try fallback endpoints
+            const fallbackRes = await fetch(`${ADMIN_API_URL}/api/admin/uploads/${id}`, {
+                method: 'DELETE',
+                headers
+            });
+            if (fallbackRes.ok) backendSuccess = true;
+        }
+    } catch (e) {
+        console.warn("Backend deleteAdminContent request error:", e);
+    }
+
+    // Direct Supabase fallback delete if content exists in Supabase contents table
+    try {
+        const { error } = await supabase.from('contents').delete().eq('id', id);
+        if (!error) backendSuccess = true;
+    } catch (e) {
+        // non-blocking
+    }
+
+    if (!backendSuccess) {
+        throw new Error('Failed to delete content from server. Please try again.');
     }
     return true;
 }

@@ -3,6 +3,7 @@ import React, { useState, useCallback } from 'react';
 import AdminHeader from './AdminHeader';
 import AdminSidebar from './AdminSidebar';
 import AdminToast from './AdminToast';
+import { SawaflixLoader } from '@/components/SawaflixLogo';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { checkAdminRole } from '@/app/actions/auth';
@@ -57,11 +58,8 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
 
     if (isVerifying) {
         return (
-            <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-400 font-medium">Verifying Admin Access...</p>
-                </div>
+            <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center">
+                <SawaflixLoader size={64} text="Verifying Admin Access..." />
             </div>
         );
     }
@@ -69,16 +67,15 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     if (!authorized) return null;
 
     return (
-        <div className="min-h-screen bg-gray-900">
+        <div className="min-h-screen bg-[#F8F9FB]">
             {/* Header */}
             <AdminHeader sidebarOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-
 
             <div className="flex pt-16">
                 {/* Mobile sidebar overlay */}
                 {sidebarOpen && (
                     <div
-                        className="fixed inset-0 bg-black/50 z-40 lg:hidden backdrop-blur-sm"
+                        className="fixed inset-0 bg-slate-900/40 z-40 lg:hidden backdrop-blur-xs"
                         onClick={closeSidebar}
                         role="button"
                         tabIndex={0}
@@ -93,19 +90,19 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
                 <aside
                     className={`
                 fixed lg:sticky top-16 left-0 z-50 lg:z-auto
-                w-64 h-[calc(100vh-4rem)] bg-gray-900
+                w-64 h-[calc(100vh-4rem)] bg-white
                 transform transition-transform duration-300 ease-in-out
                 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
                 lg:translate-x-0 lg:block
                 overflow-y-auto scrollbar-none
-                border-r border-gray-800
+                border-r border-slate-200/80 shadow-sm
               `}
                 >
                     <AdminSidebar onNavigate={closeSidebar} />
                 </aside>
 
-                {/* Main Content Area - Full width (No Right Sidebar) */}
-                <main className="flex-1 min-h-[calc(100vh-4rem)] overflow-auto bg-gray-950/50">
+                {/* Main Content Area */}
+                <main className="flex-1 min-h-[calc(100vh-4rem)] overflow-auto bg-[#F8F9FB]">
                     <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
                         {children}
                     </div>

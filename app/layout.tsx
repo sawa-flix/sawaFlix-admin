@@ -1,39 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Roboto, Open_Sans, Montserrat, Poppins } from 'next/font/google';
 import { AdminNotificationProvider } from '../contexts/AdminNotificationContext';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
-
-const roboto = Roboto({
-  weight: ['300', '400', '500', '700'],
-  subsets: ['latin'],
-  variable: '--font-roboto',
-  display: 'swap',
-});
-
-const openSans = Open_Sans({
-  subsets: ['latin'],
-  variable: '--font-open-sans',
-  display: 'swap',
-});
-
-const montserrat = Montserrat({
-  subsets: ['latin'],
-  variable: '--font-montserrat',
-  display: 'swap',
-});
-
-const poppins = Poppins({
-  weight: ['400', '500', '600', '700'],
-  subsets: ['latin'],
-  variable: '--font-poppins',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://admin.sawaflix.com'),
@@ -60,17 +27,28 @@ export const metadata: Metadata = {
   },
 };
 
+import { Suspense } from 'react';
+import TopLoader from '../components/Common/TopLoader';
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${roboto.variable} ${openSans.variable} ${montserrat.variable} ${poppins.variable}`}
-    >
-      <body className={inter.className} suppressHydrationWarning>
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Open+Sans:wght@400;600&family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body suppressHydrationWarning>
+        <Suspense fallback={null}>
+          <TopLoader />
+        </Suspense>
         <AdminNotificationProvider>
           {children}
         </AdminNotificationProvider>

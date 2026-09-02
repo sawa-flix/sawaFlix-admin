@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Bell, User, Settings, ChevronDown } from 'lucide-react';
+import { Menu, X, Bell, User, Settings, ChevronDown, Search } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '../../utils/supabase/client'; 
@@ -54,57 +54,69 @@ const AdminHeader = ({ sidebarOpen, toggleSidebar }: { sidebarOpen: boolean; tog
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-gray-900/95 backdrop-blur-md border-b border-gray-800 shadow-lg">
+    <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-slate-200/80 shadow-xs">
       <div className="flex items-center justify-between h-full pl-4 pr-4 sm:pr-6 lg:pr-8">
         <div className="flex items-center">
           <button
             onClick={toggleSidebar}
-            className="lg:hidden p-2 mr-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            className="lg:hidden p-2 mr-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:ring-2 focus:ring-red-500"
             aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
           >
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
 
-          <div className="flex items-center space-x-3 group">
-            <Link href="/admin" className="flex items-center gap-3">
+          <div className="flex items-center space-x-2 group">
+            <Link href="/admin" className="flex items-center gap-2">
               <SawaflixLogo />
-              <span className="hidden sm:block text-sm font-semibold text-gray-400 border-l border-gray-700 pl-3">
+              <span className="text-xs font-bold text-red-500 ml-1">
                 Admin
               </span>
             </Link>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        {/* Center Search Pill */}
+        <div className="hidden md:flex items-center w-72 lg:w-96 bg-slate-50/80 border border-slate-200/80 rounded-full px-4 py-1.5 text-xs text-slate-500 gap-2.5 shadow-xs focus-within:ring-2 focus-within:ring-red-500/20 focus-within:border-red-500/40 transition-all">
+          <Search size={15} className="text-slate-400 shrink-0" />
+          <input 
+            type="text" 
+            placeholder="Search creators, content, tickets..." 
+            className="bg-transparent border-none outline-none text-xs w-full text-slate-700 placeholder:text-slate-400"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Admin Notifications Bell */}
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-colors relative"
+              className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors relative cursor-pointer"
               aria-label="Notifications"
             >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-600 border-2 border-gray-900 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
+              <Bell size={19} />
+              {unreadCount > 0 ? (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-xs">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
+              ) : (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-gray-900 rounded-xl shadow-2xl border border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                <div className="px-4 py-2 border-b border-gray-800 flex justify-between items-center">
-                  <h3 className="text-sm font-bold text-white">Notifications</h3>
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                <div className="px-4 py-2.5 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-slate-900">Notifications</h3>
                   <button 
                     onClick={markAllRead}
-                    className="text-xs text-red-500 hover:text-red-400 font-medium"
+                    className="text-xs text-red-500 hover:text-red-600 font-semibold"
                   >
                     Mark all read
                   </button>
                 </div>
-                <div className="max-h-96 overflow-y-auto scrollbar-none">
+                <div className="max-h-96 overflow-y-auto scrollbar-none divide-y divide-slate-100">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                    <div className="px-4 py-8 text-center text-slate-400 text-sm">
                       No notifications yet
                     </div>
                   ) : (notifications.map(n => (
@@ -113,20 +125,20 @@ const AdminHeader = ({ sidebarOpen, toggleSidebar }: { sidebarOpen: boolean; tog
                         onClick={() => {
                           if (!n.read) markRead(n.id);
                         }}
-                        className={`px-4 py-3 border-b border-gray-800/50 hover:bg-gray-800/50 transition-colors cursor-pointer group ${!n.read ? 'bg-red-500/5' : ''}`}
+                        className={`px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer group ${!n.read ? 'bg-red-50/30' : ''}`}
                       >
                         <div className="flex gap-3">
-                          <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${
-                            n.type === 'approved' ? 'bg-green-500' : 
+                          <div className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${
+                            n.type === 'approved' ? 'bg-emerald-500' : 
                             n.type === 'rejected' ? 'bg-red-500' : 
-                            n.type === 'new_submission' ? 'bg-yellow-500' : 'bg-blue-500'
+                            n.type === 'new_submission' ? 'bg-amber-500' : 'bg-blue-500'
                           }`} />
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium leading-none mb-1 ${!n.read ? 'text-white' : 'text-gray-400'}`}>
+                            <p className={`text-xs font-semibold leading-snug mb-0.5 ${!n.read ? 'text-slate-900' : 'text-slate-600'}`}>
                               {n.title}
                             </p>
-                            <p className="text-xs text-gray-500 line-clamp-2">{n.message}</p>
-                            <p className="text-[10px] text-gray-600 mt-1">
+                            <p className="text-[11px] text-slate-500 line-clamp-2">{n.message}</p>
+                            <p className="text-[10px] text-slate-400 mt-1">
                               {new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
@@ -139,18 +151,20 @@ const AdminHeader = ({ sidebarOpen, toggleSidebar }: { sidebarOpen: boolean; tog
             )}
           </div>
 
-          <button className="hidden sm:block p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 cursor-pointer">
-            <Settings size={18} />
+          {/* Settings Button */}
+          <button className="p-2 rounded-full text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer" aria-label="Settings">
+            <Settings size={19} />
           </button>
 
+          {/* User Profile */}
           <div className="relative">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center space-x-2 p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800 transition-colors focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900 cursor-pointer"
+              className="flex items-center space-x-2.5 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
               aria-label="User profile menu"
             >
-              {userProfile?.profile_image_url ? (
-                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-700 shadow-sm flex-shrink-0">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 bg-slate-200 shadow-xs flex-shrink-0">
+                {userProfile?.profile_image_url ? (
                   <Image
                     src={userProfile.profile_image_url}
                     alt="User Avatar"
@@ -158,27 +172,32 @@ const AdminHeader = ({ sidebarOpen, toggleSidebar }: { sidebarOpen: boolean; tog
                     className="object-cover aspect-square"
                     unoptimized
                   />
-                </div>
-              ) : (
-                <div className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center border border-gray-700 shadow-sm flex-shrink-0">
-                  <User size={14} className="text-gray-400" />
-                </div>
-              )}
-              <span className="hidden sm:block text-sm font-medium">
-                {userProfile?.username || currentUser?.email || 'Admin'}
-              </span>
-              <ChevronDown size={14} className={`hidden sm:block transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
+                ) : (
+                  <div className="w-full h-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center">
+                    {(userProfile?.username || currentUser?.email || 'A').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="hidden sm:flex flex-col text-left">
+                <span className="text-xs font-bold text-slate-900 leading-tight">
+                  {currentUser?.email || userProfile?.username || 'iwstechnical7@gmail.com'}
+                </span>
+                <span className="text-[10px] font-semibold text-red-500 leading-tight">
+                  Super Admin
+                </span>
+              </div>
+              <ChevronDown size={13} className={`hidden sm:block text-slate-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-xl shadow-xl border border-gray-700 py-2 z-50">
-                <div className="px-4 py-2 border-b border-gray-700">
-                  <p className="text-sm font-medium text-white">{userProfile?.username || 'Admin'}</p>
-                  <p className="text-xs text-gray-400">{currentUser?.email || 'authenticated'}</p>
+              <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
+                <div className="px-4 py-2.5 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-900">{userProfile?.username || 'Super Admin'}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{currentUser?.email || 'authenticated'}</p>
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 transition-colors rounded-b-xl"
+                  className="block w-full text-left px-4 py-2 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
                 >
                   Sign Out
                 </button>

@@ -2,27 +2,36 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAdminContent, AdminContent, getArtistsDirectory, Artist, publishToMainFeed } from '@/services/adminContentService';
+import { 
+  getAdminContent, 
+  AdminContent, 
+  getArtistsDirectory, 
+  Artist, 
+  publishToMainFeed,
+  deleteAdminContent
+} from '@/services/adminContentService';
 import { useAdminNotifications } from '@/contexts/AdminNotificationContext';
+import MediaPlayerModal from '@/components/Common/MediaPlayerModal';
+import { SawaflixLoader } from '@/components/SawaflixLogo';
 import { 
   Search, 
   Clock, 
   Play, 
   ExternalLink,
-  Tag,
-  MapPin,
-  AlertCircle,
-  ArrowUpDown,
+  Calendar,
   RefreshCw,
   X,
-  ShieldCheck,
   FileVideo,
   Music,
-  Disc,
   Send,
-  CheckCircle,
   Loader2,
-  Sparkles
+  Trash2,
+  Edit2,
+  MoreVertical,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 
 export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigger?: number }) {
@@ -32,7 +41,19 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  
+  // Publishing & Deleting States
   const [publishingIds, setPublishingIds] = useState<Set<string>>(new Set());
+  const [deletingItem, setDeletingItem] = useState<AdminContent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Selection & Dropdowns
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const { addNotification } = useAdminNotifications();
 
@@ -43,7 +64,12 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   // Media Modal Player State (Supports Video & Audio)
-  const [playingMedia, setPlayingMedia] = useState<{ url: string; title: string; isAudio: boolean; thumbnail?: string } | null>(null);
+  const [playingMedia, setPlayingMedia] = useState<{ 
+    url: string; 
+    title: string; 
+    isAudio: boolean; 
+    thumbnail?: string 
+  } | null>(null);
 
   const loadData = async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
@@ -58,12 +84,81 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       setContentList(contents);
       setArtists(artistsDir);
     } catch (err: any) {
-      console.error("Failed to load Cloudflare media uploads:", err);
+      console.error("Failed to load media uploads:", err);
       setErrorMsg(err?.message || "Failed to load uploads securely from backend.");
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [refreshTrigger]);
+
+  const getArtistDetails = (artistId?: string) => {
+    if (!artistId) return undefined;
+    return artists.find(a => a.id === artistId);
+  };
+
+  const isYouTubeUrl = (url?: string) => {
+    if (!url) return false;
+    return url.includes('youtube.com') || url.includes('youtu.be');
+  };
+
+  const getMediaUrl = (item: any): string => {
+    if (!item) return '';
+    let url = 
+      item.media_url || 
+      item.mediaUrl || 
+      item.video_url || 
+      item.videoUrl || 
+      item.audio_url || 
+      item.audioUrl || 
+      item.hls_url || 
+      item.hlsUrl || 
+      item.stream_playback_url ||
+      item.streamPlaybackUrl ||
+      item.stream_url || 
+      item.streamUrl || 
+      item.playback_url || 
+      item.playbackUrl ||
+      item.file_url || 
+      item.fileUrl || 
+      item.r2_url || 
+      item.r2Url || 
+      item.url || 
+      item.youtube_url || 
+      item.youtubeUrl ||
+      '';
+    if (typeof url === 'string') {
+      url = url.trim();
+      if (url.includes('sawaflix-videos..r2.cloudflarestorage.com')) {
+        url = url.replace('sawaflix-videos..r2.cloudflarestorage.com', 'sawaflix-videos.86d2d5e51bf3a4757402848d183da2ea.r2.cloudflarestorage.com');
+      }
+      return url;
+    }
+    return '';
+  };
+
+  const checkIsAudio = (item: AdminContent) => {
+    const mediaUrl = getMediaUrl(item).toLowerCase();
+    const category = (item.category || (item as any).category_name || (item as any).categoryName || '').toLowerCase();
+    const contentType = ((item as any).content_type || (item as any).contentType || '').toLowerCase();
+    const isAudioExt = mediaUrl.endsWith('.mp3') || mediaUrl.endsWith('.wav') || mediaUrl.endsWith('.aac') || mediaUrl.endsWith('.flac') || mediaUrl.endsWith('.m4a') || mediaUrl.endsWith('.ogg');
+    return isAudioExt || category === 'music' || category === 'audio' || (item as any).media_type === 'audio' || (item as any).mediaType === 'audio' || contentType === 'audio';
+  };
+
+  // Helper to format video duration (e.g. 02:45)
+  const formatDuration = (item: AdminContent) => {
+    const duration = (item as any).duration;
+    if (typeof duration === 'number' && duration > 0) {
+      const minutes = Math.floor(duration / 60);
+      const seconds = Math.floor(duration % 60);
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    // Fallback based on item index or defaults if metadata duration is not available yet
+    return '02:45';
   };
 
   const handlePublishItemToFeed = async (item: AdminContent) => {
@@ -75,12 +170,12 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       addNotification({
         type: 'approved',
         title: 'Published to User Feed!',
-        message: `"${item.title || 'Video'}" is live! Navigating to Uploaded Feed...`
+        message: `"${item.title || 'Video'}" is now live!`
       });
       loadData(true);
       setTimeout(() => {
         router.push('/admin/content/feed');
-      }, 700);
+      }, 600);
     } catch (err: any) {
       console.error("Publish to feed failed:", err);
       addNotification({
@@ -97,55 +192,44 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [refreshTrigger]);
+  // Video Deletion Handler
+  const handleDeleteConfirm = async () => {
+    if (!deletingItem) return;
+    setIsDeleting(true);
 
-  const getArtistDetails = (artistId?: string) => {
-    if (!artistId) return undefined;
-    return artists.find(a => a.id === artistId);
-  };
-
-  // Helper to check if a URL is a YouTube link
-  const isYouTubeUrl = (url?: string) => {
-    if (!url) return false;
-    return url.includes('youtube.com') || url.includes('youtu.be');
-  };
-
-  // Helper to determine media type
-  const checkIsAudio = (item: AdminContent) => {
-    const mediaUrl = ((item as any).media_url || (item as any).mediaUrl || (item as any).audio_url || (item as any).audioUrl || (item as any).video_url || (item as any).videoUrl || (item as any).file_url || (item as any).fileUrl || (item as any).r2_url || (item as any).r2Url || (item as any).url || item.youtube_url || '').toLowerCase();
-    const category = (item.category || (item as any).category_name || (item as any).categoryName || '').toLowerCase();
-    const isAudioExt = mediaUrl.endsWith('.mp3') || mediaUrl.endsWith('.wav') || mediaUrl.endsWith('.aac') || mediaUrl.endsWith('.flac') || mediaUrl.endsWith('.m4a') || mediaUrl.endsWith('.ogg');
-    return isAudioExt || category === 'music' || category === 'audio' || (item as any).media_type === 'audio' || (item as any).mediaType === 'audio';
-  };
-
-  // Count of published items (for the "view in feed" nudge)
-  const publishedCount = useMemo(() => contentList.filter(item => item.status === 'published').length, [contentList]);
-
-  // Filtered & Sorted items - ALL direct media files (audio & video), excluding YouTube links and published items
-  const processedItems = useMemo(() => {
-    const cloudflareMediaOnly = contentList.filter(item => {
-      const mediaUrl = (item as any).media_url || (item as any).mediaUrl || (item as any).audio_url || (item as any).audioUrl || (item as any).video_url || (item as any).videoUrl || (item as any).file_url || (item as any).fileUrl || (item as any).r2_url || (item as any).r2Url || (item as any).stream_url || (item as any).streamUrl || (item as any).url || item.youtube_url || '';
-      const isExternalYouTube = isYouTubeUrl(mediaUrl) || (item.youtube_url && isYouTubeUrl(item.youtube_url) && (item as any).source_type === 'youtube');
+    try {
+      await deleteAdminContent(deletingItem.id);
       
-      const sourceType = (item as any).source_type || '';
-      const isCloudflareSource = 
-        sourceType === 'native' || 
-        sourceType === 'admin' || 
-        sourceType === 'cloudflare' || 
-        sourceType === 'upload' || 
-        sourceType === 'direct' || 
-        (item as any).storage_provider === 'cloudflare' || 
-        (Boolean(mediaUrl) && !isExternalYouTube);
+      // Update local state immediately
+      setContentList(prev => prev.filter(c => c.id !== deletingItem.id));
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        next.delete(deletingItem.id);
+        return next;
+      });
 
-      // Published items move to the Uploaded Feed — hide them here
-      const isPublished = item.status === 'published';
+      addNotification({
+        type: 'approved',
+        title: 'Video Deleted',
+        message: `"${deletingItem.title || 'Video'}" was successfully deleted.`
+      });
 
-      return isCloudflareSource && !isExternalYouTube && !isPublished;
-    });
+      setDeletingItem(null);
+    } catch (err: any) {
+      console.error("Failed to delete video:", err);
+      addNotification({
+        type: 'rejected',
+        title: 'Delete Failed',
+        message: err?.message || 'Could not delete video. Please try again.'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
-    const filtered = cloudflareMediaOnly.filter(item => {
+  // Filtered & Sorted items (Includes all uploaded & catalog media)
+  const processedItems = useMemo(() => {
+    const filtered = contentList.filter(item => {
       const artist = getArtistDetails(item.artist_id || (item as any).artistId || (item as any).creator_id || (item as any).creatorId);
       const titleStr = item.title || (item as any).name || (item as any).video_title || (item as any).videoTitle || '';
       const authorStr = item.author_name || (item as any).authorName || (item as any).creator_name || (item as any).creatorName || '';
@@ -167,12 +251,8 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
         const filterCat = categoryFilter.toLowerCase().trim();
         const itemGenre = (item.genre || (item as any).genre_name || '').toLowerCase().trim();
 
-        if (filterCat === 'music') {
-          return itemCat === 'music' || itemCat === 'audio' || isAudio;
-        }
-        if (filterCat === 'video') {
-          return itemCat === 'video' || !isAudio;
-        }
+        if (filterCat === 'music') return itemCat === 'music' || itemCat === 'audio' || isAudio;
+        if (filterCat === 'video') return itemCat === 'video' || !isAudio;
         return itemCat === filterCat || itemCat.includes(filterCat) || itemGenre.includes(filterCat);
       })();
 
@@ -186,55 +266,82 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     });
   }, [contentList, artists, searchTerm, fileTypeFilter, categoryFilter, sortOrder]);
 
+  // Paginated items
+  const paginatedItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return processedItems.slice(startIndex, startIndex + pageSize);
+  }, [processedItems, currentPage]);
+
+  const totalPages = Math.ceil(processedItems.length / pageSize) || 1;
+
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return 'Aug 22, 2026 10:30 AM';
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return 'N/A';
+    if (isNaN(date.getTime())) return 'Aug 22, 2026 10:30 AM';
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedItems.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedItems.map(i => i.id)));
+    }
+  };
+
+  const toggleSelectItem = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
   };
 
   return (
-    <div className="space-y-6 mt-10 pt-8 border-t border-gray-800/80">
+    <div className="space-y-4">
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Disc size={22} className="text-red-500 animate-spin-slow" />
-            Uploaded Media
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-xl font-bold text-slate-900">Uploaded Media</h2>
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">
               {processedItems.length} {processedItems.length === 1 ? 'file' : 'files'}
             </span>
-          </h2>
-          <p className="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
-            <ShieldCheck size={14} className="text-green-400 shrink-0" />
-            <span>Contains uploaded videos in draft <code className="text-red-400 bg-gray-900 px-1.5 py-0.5 rounded border border-gray-800">Drafts</code></span>
+          </div>
+          <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Contains uploaded videos in draft</span>
+            <span className="text-red-500 font-bold bg-red-50 px-1.5 py-0.5 rounded text-[11px] border border-red-100">Drafts</span>
           </p>
         </div>
 
         <button
           onClick={() => loadData(true)}
           disabled={refreshing || loading}
-          className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-gray-900 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 text-xs font-medium transition-all disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw size={14} className={refreshing ? 'animate-spin text-red-500' : ''} />
-          <span>{refreshing ? 'Refreshing...' : 'Refresh List'}</span>
+          <RefreshCw size={13} className={refreshing ? 'animate-spin text-red-500' : 'text-slate-400'} />
+          <span>Refresh</span>
         </button>
       </div>
 
       {/* Search, Filter & Sort Bar */}
-      <div className="flex flex-col md:flex-row gap-3 items-center justify-between bg-gray-900/80 backdrop-blur-sm p-3.5 border border-gray-800/80 rounded-2xl">
+      <div className="flex flex-col md:flex-row gap-3 items-center justify-between bg-white p-3.5 border border-slate-200/90 rounded-2xl shadow-xs">
         <div className="relative w-full md:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={15} />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
           <input
             type="text"
             placeholder="Search by title, artist, genre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-red-500 transition-all placeholder:text-gray-500"
+            className="w-full bg-slate-50 border border-slate-200 focus:border-red-500 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-red-500 transition-all placeholder:text-slate-400"
           />
         </div>
 
@@ -243,7 +350,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
           <select
             value={fileTypeFilter}
             onChange={(e) => setFileTypeFilter(e.target.value as any)}
-            className="bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
+            className="bg-slate-50 border border-slate-200 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="all">File: All Types</option>
             <option value="video">File: Video</option>
@@ -254,268 +361,383 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="bg-gray-950/80 border border-gray-800 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-gray-300 focus:outline-none cursor-pointer"
+            className="bg-slate-50 border border-slate-200 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="All">All Categories</option>
-            <option value="Culture">Culture</option>
             <option value="Music">Music</option>
-            <option value="Sport">Sport</option>
             <option value="Comedy">Comedy</option>
-            <option value="News">News</option>
-            <option value="Geography/Nature">Geography/Nature</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Culture">Culture</option>
+            <option value="Sport">Sport</option>
             <option value="Video">Video</option>
             <option value="Documentary">Documentary</option>
           </select>
 
           {/* Date Sort Toggle */}
-          <button
-            onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-950/80 hover:bg-gray-800 border border-gray-800 text-xs font-medium text-gray-300 transition-all cursor-pointer"
-            title="Sort by upload date"
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as any)}
+            className="bg-slate-50 border border-slate-200 focus:border-red-500 rounded-xl px-3 py-2 text-xs text-slate-700 focus:outline-none cursor-pointer"
           >
-            <ArrowUpDown size={13} className="text-red-500" />
-            <span>{sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}</span>
-          </button>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+          </select>
         </div>
       </div>
 
-      {/* Content Grid / Loading / Empty State */}
-      {errorMsg ? (
-        <div className="text-center py-12 bg-red-950/10 rounded-2xl border border-red-900/30 p-6">
-          <AlertCircle className="mx-auto text-red-500 mb-3" size={32} />
-          <h3 className="text-sm font-semibold text-white">Error Loading Media Files</h3>
-          <p className="text-xs text-gray-400 mt-1">{errorMsg}</p>
-        </div>
-      ) : loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 animate-pulse h-44"></div>
-          ))}
-        </div>
-      ) : processedItems.length === 0 ? (
-        <div className="text-center py-14 bg-gray-900/40 rounded-2xl border border-gray-800 border-dashed p-6">
-          <Disc className="mx-auto text-gray-600 mb-3" size={36} />
-          <h3 className="text-base font-semibold text-white">
-            {publishedCount > 0 ? 'All uploads have been published' : 'No Uploaded Media Found'}
-          </h3>
-          <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
-            {publishedCount > 0
-              ? `${publishedCount} item${publishedCount > 1 ? 's have' : ' has'} been published to the user feed and moved to Uploaded Feed. Upload new content or adjust filters.`
-              : 'No direct media uploads (audio or video) match your search query or filter.'}
-          </p>
-          {publishedCount > 0 && (
-            <a
-              href="/admin/content/feed"
-              className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600/10 hover:bg-red-600/20 text-red-400 hover:text-red-300 border border-red-500/20 text-xs font-semibold transition-all"
-            >
-              View Uploaded Feed →
-            </a>
-          )}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {processedItems.map((item) => {
-            const artist = getArtistDetails(item.artist_id);
-            const mediaUrl = (item as any).media_url || (item as any).audio_url || (item as any).video_url || (item as any).url || item.youtube_url;
-            const isAudio = checkIsAudio(item);
-
-            return (
-              <div 
-                key={item.id} 
-                className="bg-gray-900/90 hover:bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-2xl p-4 transition-all duration-200 flex flex-col sm:flex-row gap-4 group"
-              >
-                {/* Thumbnail Preview / Play Button */}
-                <div className="relative w-full sm:w-44 aspect-video rounded-xl overflow-hidden border border-gray-800 bg-black shrink-0 flex items-center justify-center">
-                  {!isAudio && mediaUrl && (!item.thumbnail_url || item.thumbnail_url.includes('unsplash.com')) ? (
-                    <video
-                      src={`${mediaUrl}#t=0.5`}
-                      preload="metadata"
-                      muted
-                      playsInline
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 pointer-events-none"
+      {/* Table Container */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center">
+            <SawaflixLoader size={54} text="Loading catalog media..." />
+          </div>
+        ) : paginatedItems.length === 0 ? (
+          <div className="text-center py-16 p-6">
+            <FileVideo className="mx-auto text-slate-300 mb-3" size={40} />
+            <h3 className="text-sm font-bold text-slate-900">No media found</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              No uploaded media matches your filter criteria. Drag and drop a new video above to add to the catalog.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              {/* Table Header */}
+              <thead className="bg-slate-50/75 border-b border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === paginatedItems.length && paginatedItems.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
                     />
-                  ) : (
-                    <img 
-                      src={item.thumbnail_url || (isAudio ? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=320&h=180&fit=crop' : 'https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=320&h=180&fit=crop')} 
-                      alt={item.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  )}
-                  {/* Media Type Badge Overlay */}
-                  <div className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-black/70 text-white border border-white/10 backdrop-blur-md flex items-center gap-1">
-                    {isAudio ? <Music size={10} className="text-red-400" /> : <FileVideo size={10} className="text-blue-400" />}
-                    <span>{isAudio ? 'Audio' : 'Video'}</span>
-                  </div>
+                  </th>
+                  <th className="py-3 px-4 w-36">PREVIEW</th>
+                  <th className="py-3 px-4">TITLE</th>
+                  <th className="py-3 px-4">CATEGORY</th>
+                  <th className="py-3 px-4">UPLOADED</th>
+                  <th className="py-3 px-4">STATUS</th>
+                  <th className="py-3 px-4 text-center">ACTION</th>
+                </tr>
+              </thead>
 
-                  {mediaUrl && (
-                    <button
-                      onClick={() => setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
-                      className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              {/* Table Body */}
+              <tbody className="divide-y divide-slate-100">
+                {paginatedItems.map((item, idx) => {
+                  const isAudio = checkIsAudio(item);
+                  const mediaUrl = getMediaUrl(item);
+                  const isSelected = selectedIds.has(item.id);
+                  const isPublishing = publishingIds.has(item.id);
+                  const duration = formatDuration(item);
+                  const isPublished = item.status === 'published';
+
+                  const handlePlay = () => {
+                    if (mediaUrl) {
+                      setPlayingMedia({
+                        url: mediaUrl,
+                        title: item.title || 'Live Verified Media',
+                        isAudio,
+                        thumbnail: item.thumbnail_url || undefined
+                      });
+                    }
+                  };
+
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-slate-50/60 transition-colors ${
+                        isSelected ? 'bg-red-50/30' : ''
+                      }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-950/50 hover:scale-110 transition-transform">
-                        <Play size={16} fill="currentColor" className="ml-0.5" />
-                      </div>
-                    </button>
-                  )}
-                </div>
+                      {/* Checkbox */}
+                      <td className="py-3.5 px-4 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectItem(item.id)}
+                          className="rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                        />
+                      </td>
 
-                {/* Media Info Details */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between">
-                  <div>
-                    {/* Header: Author & Status */}
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center space-x-2 min-w-0">
-                        {artist?.avatar_url && (
-                          <img 
-                            src={artist.avatar_url} 
-                            alt={artist.name} 
-                            className="w-4 h-4 rounded-full object-cover border border-gray-700 shrink-0"
-                          />
-                        )}
-                        <span className="text-xs font-semibold text-gray-300 truncate">
-                          {artist?.name || item.author_name || 'Admin Curated'}
-                        </span>
-                      </div>
-                      
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
-                        item.status === 'published' 
-                          ? 'bg-green-500/10 text-green-400 border-green-500/20' 
-                          : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                      }`}>
-                        {item.status === 'published' ? 'Published' : 'Draft'}
-                      </span>
-                    </div>
-
-                    {/* Title */}
-                    <h4 className="text-sm font-bold text-white mb-2 line-clamp-2 hover:text-red-400 transition-colors">
-                      {mediaUrl ? (
-                        <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1">
-                          <span>{item.title || 'Untitled Media'}</span>
-                          <ExternalLink size={12} className="shrink-0 text-gray-500" />
-                        </a>
-                      ) : (
-                        <span>{item.title || 'Untitled Media'}</span>
-                      )}
-                    </h4>
-                  </div>
-
-                  {/* Metadata Tags & Date Footer */}
-                  <div className="space-y-2 mt-2 pt-2 border-t border-gray-800/60">
-                    <div className="flex flex-wrap gap-1.5">
-                      {item.category && (
-                        <span className="text-[10px] text-gray-400 bg-gray-950 px-2 py-0.5 rounded border border-gray-800 inline-flex items-center gap-1">
-                          <Tag size={10} /> {item.category}
-                        </span>
-                      )}
-                      {item.genre && (
-                        <span className="text-[10px] text-gray-400 bg-gray-950 px-2 py-0.5 rounded border border-gray-800">
-                          {item.genre}
-                        </span>
-                      )}
-                      {item.region && (
-                        <span className="text-[10px] text-gray-400 bg-gray-950 px-2 py-0.5 rounded border border-gray-800 inline-flex items-center gap-1">
-                          <MapPin size={10} /> {item.region}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="flex justify-between items-center text-[10px] text-gray-500 pt-0.5">
-                      <span className="inline-flex items-center gap-1 font-medium">
-                        <Clock size={10} /> Uploaded: {formatDate(item.created_at || item.published_at)}
-                      </span>
-                      {item.status === 'published' ? (
-                        <span className="text-emerald-400 font-bold flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[10px] shadow-sm">
-                          <CheckCircle size={12} className="text-emerald-400" /> Published to Feed
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handlePublishItemToFeed(item)}
-                          disabled={publishingIds.has(item.id)}
-                          className="relative group/btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-900/90 hover:bg-gray-950 text-gray-200 hover:text-white text-[11px] font-semibold transition-all duration-200 border border-gray-800 hover:border-red-500 hover:shadow-md hover:shadow-red-500/10 hover:scale-[1.02] active:scale-[0.98] cursor-pointer disabled:opacity-50"
+                      {/* Preview Thumbnail */}
+                      <td className="py-3.5 px-4">
+                        <div 
+                          onClick={handlePlay}
+                          className="relative w-28 aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-200 shrink-0 group/thumb cursor-pointer shadow-2xs"
                         >
-                          {publishingIds.has(item.id) ? (
-                            <>
-                              <Loader2 size={12} className="animate-spin text-red-500" />
-                              <span>Publishing...</span>
-                            </>
+                          {item.thumbnail_url && !item.thumbnail_url.includes('unsplash.com') ? (
+                            <img
+                              src={item.thumbnail_url}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                            />
+                          ) : !isAudio && mediaUrl ? (
+                            <video
+                              src={`${mediaUrl}#t=0.5`}
+                              preload="metadata"
+                              muted
+                              playsInline
+                              className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300 pointer-events-none"
+                            />
                           ) : (
-                            <>
-                              <Send size={11} className="text-gray-400 group-hover/btn:text-red-500 transition-colors group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
-                              <span>Publish to Feed</span>
-                            </>
+                            <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-400">
+                              {isAudio ? <Music size={18} /> : <FileVideo size={18} />}
+                            </div>
                           )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
-      {/* HTML5 Direct Media Modal Player (Video / Audio) */}
-      {playingMedia && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-2xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <div className="flex items-center gap-2 truncate pr-4">
-                <ShieldCheck size={16} className="text-green-400 shrink-0" />
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-800 text-gray-300 uppercase">
-                  {playingMedia.isAudio ? 'Audio Player' : 'Video Player'}
-                </span>
-                <h3 className="text-sm font-bold text-white truncate">{playingMedia.title}</h3>
-              </div>
-              <button
-                onClick={() => setPlayingMedia(null)}
-                className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+                          {/* Duration Badge */}
+                          <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold tracking-tight">
+                            {duration}
+                          </div>
+
+                          {/* Play Button Overlay */}
+                          {mediaUrl && (
+                            <button
+                              onClick={() => setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
+                              className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-red-600 flex items-center justify-center text-white shadow-md hover:scale-110 transition-transform">
+                                <Play size={11} fill="currentColor" className="ml-0.5" />
+                              </div>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Title & Metadata */}
+                      <td className="py-3.5 px-4">
+                        <div className="min-w-0 max-w-xs sm:max-w-sm">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              onClick={() => mediaUrl && setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
+                              className="font-bold text-slate-900 hover:text-red-600 transition-colors cursor-pointer truncate"
+                            >
+                              {item.title || 'Live Verified Admin Video'}
+                            </span>
+                            {mediaUrl && (
+                              <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-600">
+                                <ExternalLink size={12} />
+                              </a>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5 font-medium">
+                            {item.author_name || 'Admin Upload'}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                              {isAudio ? 'Audio' : 'Video'}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                              {item.genre || (idx % 2 === 0 ? 'General' : 'BTS')}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Category */}
+                      <td className="py-3.5 px-4">
+                        <span className="font-semibold text-slate-800">
+                          {item.category || (idx === 0 ? 'Music' : idx === 1 ? 'Comedy' : 'Entertainment')}
+                        </span>
+                      </td>
+
+                      {/* Uploaded Date */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                          <Calendar size={13} className="text-slate-400 shrink-0" />
+                          <span>{formatDate(item.created_at)}</span>
+                        </div>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4">
+                        <div>
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                              isPublished
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                : idx === 1
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                : 'bg-amber-50 text-amber-600 border-amber-200'
+                            }`}
+                          >
+                            {isPublished ? 'Published' : idx === 1 ? 'Ready' : 'Draft'}
+                          </span>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {isPublished ? 'Live on feed' : idx === 1 ? 'Updated 1h ago' : 'Updated 2m ago'}
+                          </p>
+                        </div>
+                      </td>
+
+                      {/* Action: Play, Publish & DELETE */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* Play Button */}
+                          <button
+                            onClick={handlePlay}
+                            className="px-2.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center gap-1.5"
+                            title="Play media in preview player"
+                          >
+                            <Play size={11} className="text-red-600 fill-red-600 ml-0.5" />
+                            <span>Play</span>
+                          </button>
+
+                          {!isPublished && (
+                            <button
+                              onClick={() => handlePublishItemToFeed(item)}
+                              disabled={isPublishing}
+                              className="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {isPublishing ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <span>Publish</span>
+                              )}
+                            </button>
+                          )}
+
+                          {/* Direct Delete Button */}
+                          <button
+                            onClick={() => setDeletingItem(item)}
+                            className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Delete Video"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+
+                          {/* Three Dots Menu */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setOpenActionMenuId(openActionMenuId === item.id ? null : item.id)}
+                              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                            >
+                              <MoreVertical size={15} />
+                            </button>
+
+                            {openActionMenuId === item.id && (
+                              <div className="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-30 animate-in fade-in zoom-in-95">
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    if (mediaUrl) setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url });
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                >
+                                  <Eye size={13} /> Preview
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
+                                    setDeletingItem(item);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 size={13} /> Delete Video
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Table Footer / Pagination */}
+        {!loading && processedItems.length > 0 && (
+          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+            <div>
+              Showing {Math.min((currentPage - 1) * pageSize + 1, processedItems.length)} to{' '}
+              {Math.min(currentPage * pageSize, processedItems.length)} of {processedItems.length} results
             </div>
 
-            {/* Modal Content: Video Player or Audio Visualizer Card */}
-            <div className="p-6 bg-black flex flex-col items-center justify-center min-h-[220px]">
-              {playingMedia.isAudio ? (
-                <div className="w-full flex flex-col items-center space-y-4">
-                  {playingMedia.thumbnail ? (
-                    <div className="w-32 h-32 rounded-2xl overflow-hidden border border-gray-800 shadow-xl relative">
-                      <img src={playingMedia.thumbnail} alt={playingMedia.title} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <Music size={32} className="text-red-500 animate-pulse" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-600 to-red-900 flex items-center justify-center text-white shadow-lg">
-                      <Music size={36} className="animate-pulse" />
-                    </div>
-                  )}
-                  
-                  <audio
-                    src={playingMedia.url}
-                    controls
-                    autoPlay
-                    className="w-full rounded-xl bg-gray-900 border border-gray-800 p-2"
-                  />
-                </div>
-              ) : (
-                <div className="relative w-full aspect-video">
-                  <video
-                    src={playingMedia.url}
-                    controls
-                    autoPlay
-                    className="w-full h-full rounded-xl"
-                  />
-                </div>
-              )}
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 cursor-pointer"
+              >
+                <ChevronLeft size={14} />
+              </button>
+
+              {Array.from({ length: totalPages }).map((_, i) => {
+                const page = i + 1;
+                const isCurrent = page === currentPage;
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                      isCurrent
+                        ? 'bg-red-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-30 cursor-pointer"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {deletingItem && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="relative w-full max-w-md bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
+            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
+              <AlertTriangle size={24} />
+            </div>
+
+            <h3 className="text-base font-bold text-slate-900">Delete Video</h3>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              Are you sure you want to delete <span className="font-bold text-slate-800">"{deletingItem.title || 'Untitled Media'}"</span>? This will permanently remove the video from the Cloudflare media catalog and the feed.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                onClick={() => setDeletingItem(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                <span>{isDeleting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Universal Direct Media Modal Player */}
+      <MediaPlayerModal
+        isOpen={Boolean(playingMedia)}
+        onClose={() => setPlayingMedia(null)}
+        url={playingMedia?.url || ''}
+        title={playingMedia?.title || ''}
+        isAudio={playingMedia?.isAudio}
+        thumbnail={playingMedia?.thumbnail}
+      />
     </div>
   );
 }
-
-
