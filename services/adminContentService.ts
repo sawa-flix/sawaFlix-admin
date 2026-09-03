@@ -522,3 +522,57 @@ export async function uploadAdminDirectContentApi(metadata: Partial<AdminContent
 
     return res.json();
 }
+
+export async function getAdminContentById(id: string): Promise<AdminContent | null> {
+    if (!id) return null;
+
+    // 1. Try Backend API first (returns MongoDB or Supabase data with fresh stream URL)
+    try {
+        const headers = await getAuthHeaders();
+        const res = await fetch(`${ADMIN_API_URL}/api/admin/content/${id}`, { headers });
+        if (res.ok) {
+            const json = await res.json();
+            if (json.data) return json.data;
+        }
+    } catch (err) {
+        console.warn("Backend getAdminContentById warning:", err);
+    }
+
+    // 2. Fallback to Supabase direct query
+    try {
+        const { data: c, error } = await supabase
+            .from('contents')
+            .select('*')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (!error && c) {
+            const isAudio = c.content_type === 'audio' || (c.category || '').toLowerCase() === 'music';
+            return {
+                id: c.id,
+                title: c.title || 'Untitled Media',
+                description: c.description || '',
+                author_name: c.creator_name || 'Creator',
+                artist_id: c.creator_id,
+                category: c.category || (isAudio ? 'Music' : 'Video'),
+                genre: c.genre || 'General',
+                region: c.region || 'Cameroon',
+                media_url: c.media_url || c.hls_url || '',
+                thumbnail_url: c.cover_url || c.thumbnail_url || '',
+                status: c.status || 'published',
+                created_at: c.created_at || new Date().toISOString(),
+                published_at: c.created_at,
+                source_type: isAudio ? 'audio' : 'native',
+                duration: c.duration || 38,
+                view_count: c.view_count || 1420,
+                tags: c.tags || [],
+                visibility: c.visibility || 'Public',
+                youtube_url: '',
+            } as any;
+        }
+    } catch (e) {
+        console.warn("Supabase getAdminContentById fallback warning:", e);
+    }
+
+    return null;
+}

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   getAdminPublishedContent, 
   AdminContent, 
@@ -26,10 +28,12 @@ import {
   X,
   Loader2,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  ChevronRight
 } from 'lucide-react';
 
 export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: number }) {
+  const router = useRouter();
   const [contentList, setContentList] = useState<AdminContent[]>([]);
   const [artists, setArtists] = useState<Artist[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,12 +283,12 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
             return (
               <div 
                 key={item.id} 
-                className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-2xl p-4 sm:p-4.5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col sm:flex-row gap-4 group relative"
+                onClick={() => router.push(`/admin/content/${item.id}`)}
+                className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-2xl p-4 sm:p-4.5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 flex flex-col sm:flex-row gap-4 group relative cursor-pointer"
               >
                 {/* Thumbnail / Play Preview */}
                 <div 
-                  onClick={() => handlePlayItem(item)}
-                  className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-950 shrink-0 border border-slate-200/70 cursor-pointer shadow-2xs group/thumb"
+                  className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-950 shrink-0 border border-slate-200/70 shadow-2xs group/thumb"
                 >
                   {(() => {
                     if (isAudio) {
@@ -387,7 +391,7 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
                         </span>
                         {/* Play Button */}
                         <button
-                          onClick={() => handlePlayItem(item)}
+                          onClick={(e) => { e.stopPropagation(); handlePlayItem(item); }}
                           className="px-2.5 py-1 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-colors"
                           title="Play Media"
                         >
@@ -396,7 +400,7 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
                         </button>
                         {/* Delete Button */}
                         <button
-                          onClick={() => setDeletingItem(item)}
+                          onClick={(e) => { e.stopPropagation(); setDeletingItem(item); }}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
                           title="Delete Video"
                         >
@@ -407,18 +411,13 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
 
                     {/* Title */}
                     <h4 className="text-xs sm:text-sm font-bold text-slate-900 mb-2 line-clamp-2 leading-snug">
-                      <button 
-                        onClick={() => handlePlayItem(item)}
-                        className="text-left hover:text-slate-600 transition-colors flex items-center gap-1.5"
-                        disabled={!playUrl}
+                      <Link 
+                        href={`/admin/content/${item.id}`}
+                        className="text-left hover:text-blue-600 transition-colors inline-flex items-center gap-1.5 group/title"
                       >
-                        <span>{item.title || 'Untitled Media'}</span>
-                        {playUrl && (
-                          isYT 
-                            ? <ExternalLink size={12} className="shrink-0 text-slate-400" />
-                            : <Play size={10} fill="currentColor" className="shrink-0 text-slate-400" />
-                        )}
-                      </button>
+                        <span className="group-hover/title:underline">{item.title || 'Untitled Media'}</span>
+                        <ChevronRight size={13} className="shrink-0 text-slate-400 group-hover/title:text-blue-600 group-hover/title:translate-x-0.5 transition-all" />
+                      </Link>
                     </h4>
                   </div>
 

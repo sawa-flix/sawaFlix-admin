@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   getAdminContent, 
   AdminContent, 
@@ -161,8 +162,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
       const seconds = Math.floor(duration % 60);
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
-    // Fallback based on item index or defaults if metadata duration is not available yet
-    return '02:45';
+    return '00:38';
   };
 
   const handlePublishItemToFeed = async (item: AdminContent) => {
@@ -450,7 +450,8 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                   return (
                     <tr
                       key={item.id}
-                      className={`hover:bg-slate-50/60 transition-colors ${
+                      onClick={() => router.push(`/admin/content/${item.id}`)}
+                      className={`hover:bg-slate-50/60 transition-colors cursor-pointer ${
                         isSelected ? 'bg-red-50/30' : ''
                       }`}
                     >
@@ -460,6 +461,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectItem(item.id)}
+                          onClick={(e) => e.stopPropagation()}
                           className="rounded border-slate-300 text-slate-900 focus:ring-slate-500 cursor-pointer"
                         />
                       </td>
@@ -467,7 +469,6 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       {/* Preview Thumbnail */}
                       <td className="py-3.5 px-4">
                         <div 
-                          onClick={handlePlay}
                           className="relative w-28 aspect-video rounded-xl overflow-hidden bg-slate-950 border border-slate-200/80 shrink-0 group/thumb cursor-pointer shadow-xs"
                         >
                           {item.thumbnail_url && !item.thumbnail_url.includes('unsplash.com') ? (
@@ -498,7 +499,10 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                           {/* Play Button Overlay */}
                           {mediaUrl && (
                             <button
-                              onClick={() => setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url });
+                              }}
                               className="absolute inset-0 bg-black/30 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity"
                             >
                               <div className="w-7 h-7 rounded-full bg-white/95 text-slate-900 flex items-center justify-center shadow-md hover:scale-110 transition-transform">
@@ -513,12 +517,12 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       <td className="py-3.5 px-4">
                         <div className="min-w-0 max-w-xs sm:max-w-sm">
                           <div className="flex items-center gap-1.5">
-                            <span
-                              onClick={() => mediaUrl && setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url })}
-                              className="font-bold text-slate-900 hover:text-slate-600 transition-colors cursor-pointer truncate"
+                            <Link
+                              href={`/admin/content/${item.id}`}
+                              className="font-bold text-slate-900 hover:text-blue-600 transition-colors cursor-pointer truncate hover:underline"
                             >
                               {item.title || 'Live Verified Admin Video'}
-                            </span>
+                            </Link>
                             {mediaUrl && (
                               <a href={mediaUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-600">
                                 <ExternalLink size={12} />
@@ -575,7 +579,7 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                       </td>
 
                       {/* Action: Play, Publish & DELETE */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-center gap-1.5">
                           {/* Play Button */}
                           <button
@@ -624,9 +628,18 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
                                 <button
                                   onClick={() => {
                                     setOpenActionMenuId(null);
+                                    router.push(`/admin/content/${item.id}`);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                >
+                                  <ExternalLink size={13} /> View Details
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setOpenActionMenuId(null);
                                     if (mediaUrl) setPlayingMedia({ url: mediaUrl, title: item.title, isAudio, thumbnail: item.thumbnail_url });
                                   }}
-                                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                                 >
                                   <Eye size={13} /> Preview
                                 </button>

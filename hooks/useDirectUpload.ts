@@ -34,7 +34,7 @@ export const useDirectUpload = () => {
     });
   };
 
-  const validateVideoFile = async (file: File) => {
+  const validateVideoFile = async (file: File): Promise<number> => {
     const MAX_SIZE = 41943040; // 40MB
     if (file.size > MAX_SIZE) {
       throw new Error('File exceeds the 40MB limit.');
@@ -44,7 +44,7 @@ export const useDirectUpload = () => {
     if (duration >= 180) {
       throw new Error('Video duration must be strictly less than 180 seconds.');
     }
-    return true;
+    return duration;
   };
 
   const startUpload = useCallback(async ({ file, metadata }: UploadOptions) => {
@@ -54,8 +54,8 @@ export const useDirectUpload = () => {
     setStatus('validating');
 
     try {
-      // 1. File Validation Gate (Client-Side)
-      await validateVideoFile(file);
+      // 1. File Validation Gate (Client-Side) - captures true duration
+      const actualDuration = await validateVideoFile(file);
 
       // 2. Presigning Phase
       setStatus('presigning');
@@ -121,10 +121,14 @@ export const useDirectUpload = () => {
 
       // 4. Confirming Phase
       setStatus('confirming');
+      const payloadWithDuration = {
+        ...metadata,
+        duration: Math.round(actualDuration)
+      };
       const confirmResponse = await fetch(`${backendUrl}/api/admin/upload/confirm/${videoId}`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(metadata),
+        body: JSON.stringify(payloadWithDuration),
       });
 
       if (!confirmResponse.ok) {
