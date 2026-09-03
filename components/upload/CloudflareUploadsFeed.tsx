@@ -124,28 +124,24 @@ export default function CloudflareUploadsFeed({ refreshTrigger }: { refreshTrigg
     ].filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
      .map(u => u.trim());
 
-    // Helper: is this a broken R2 URL we can't play?
+    // Helper: is this a truly broken URL (empty R2 credentials or raw S3 endpoint without signing)?
     const isBrokenR2 = (u: string) =>
-      u.includes('r2.cloudflarestorage.com') ||
-      u.includes('X-Amz-Credential=%2F') ||
-      u.includes('X-Amz-Credential=');
+      u.includes('X-Amz-Credential=%2F') || // empty access key
+      (u.includes('r2.cloudflarestorage.com') && !u.includes('X-Amz-'));  // raw R2 endpoint without any signing
 
-    // Helper: is this a known-good playable URL?
-    const isPlayable = (u: string) =>
-      u.includes('cloudinary.com') ||
-      u.includes('youtube.com') ||
-      u.includes('youtu.be') ||
-      (u.startsWith('http') && !isBrokenR2(u));
+    // 0th pass: backend stream endpoints are always best (generate fresh presigned URLs on-demand)
+    const streamUrl = candidates.find(u => u.includes('/api/admin/upload/stream/'));
+    if (streamUrl) return streamUrl;
 
     // 1st pass: prefer Cloudinary or YouTube (known to stream reliably)
     const best = candidates.find(u => u.includes('cloudinary.com') || u.includes('youtube.com') || u.includes('youtu.be'));
     if (best) return best;
 
-    // 2nd pass: any playable URL that is NOT a broken R2 presigned URL
-    const playable = candidates.find(u => isPlayable(u));
+    // 2nd pass: any HTTP URL that isn't broken
+    const playable = candidates.find(u => u.startsWith('http') && !isBrokenR2(u));
     if (playable) return playable;
 
-    // 3rd pass: last resort, return the first candidate even if R2
+    // 3rd pass: last resort, return the first candidate
     return candidates[0] || '';
   };
 

@@ -105,22 +105,19 @@ export default function AdminContentFeed({ refreshTrigger }: { refreshTrigger?: 
      .map(u => u.trim());
 
     const isBrokenR2 = (u: string) =>
-      u.includes('r2.cloudflarestorage.com') ||
       u.includes('X-Amz-Credential=%2F') ||
-      u.includes('X-Amz-Credential=');
+      (u.includes('r2.cloudflarestorage.com') && !u.includes('X-Amz-'));
 
-    const isPlayable = (u: string) =>
-      u.includes('cloudinary.com') ||
-      u.includes('youtube.com') ||
-      u.includes('youtu.be') ||
-      (u.startsWith('http') && !isBrokenR2(u));
+    // 0th pass: backend stream endpoints always work (fresh presigned URLs on-demand)
+    const streamUrl = candidates.find(u => u.includes('/api/admin/upload/stream/'));
+    if (streamUrl) return streamUrl;
 
     // 1st pass: prefer Cloudinary or YouTube
     const best = candidates.find(u => u.includes('cloudinary.com') || u.includes('youtube.com') || u.includes('youtu.be'));
     if (best) return best;
 
-    // 2nd pass: any non-broken playable stream
-    const playable = candidates.find(u => isPlayable(u));
+    // 2nd pass: any non-broken HTTP URL
+    const playable = candidates.find(u => u.startsWith('http') && !isBrokenR2(u));
     if (playable) return playable;
 
     return candidates[0] || '';
