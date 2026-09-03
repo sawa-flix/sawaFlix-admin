@@ -59,7 +59,8 @@ export default function MediaPlayerModal({
 
   const isYouTube = cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
   const isHls = cleanUrl.includes('.m3u8');
-  const isDirectVideo = !isYouTube && !isHls && (cleanUrl.includes('.mp4') || cleanUrl.includes('.webm') || cleanUrl.includes('cloudinary.com'));
+  const isStreamProxy = cleanUrl.includes('/stream/');
+  const isDirectVideo = isStreamProxy || (!isYouTube && !isHls && (cleanUrl.includes('.mp4') || cleanUrl.includes('.webm') || cleanUrl.includes('cloudinary.com')));
 
   useEffect(() => {
     setUseFallback(false);
@@ -94,47 +95,46 @@ export default function MediaPlayerModal({
       onClick={onClose}
     >
       <div 
-        className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+        className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col relative z-10"
+        onClick={e => e.stopPropagation()}
       >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-900/95 text-white">
-          <div className="flex items-center gap-2.5 min-w-0 pr-4">
-            <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full ${
-              isAudio 
-                ? 'bg-purple-500/15 text-purple-200 border border-purple-400/25' 
-                : 'bg-white/10 text-slate-200 border border-white/15 backdrop-blur-md'
-            }`}>
-              {isAudio ? <Music size={12} className="text-purple-300" /> : <Video size={12} className="text-slate-300" />}
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
+          <div className="flex items-center gap-2.5 overflow-hidden pr-3">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-slate-200 border border-white/15 backdrop-blur-md shrink-0">
+              {isAudio ? <Music size={11} /> : <Video size={11} />}
               <span>{isAudio ? 'Audio Track' : 'Video Playback'}</span>
             </span>
-            <h3 className="text-xs sm:text-sm font-semibold text-white/90 truncate max-w-md">
-              {title || 'Media Playback'}
+            <h3 className="text-sm font-bold text-white truncate max-w-sm sm:max-w-md">
+              {title}
             </h3>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleCopyLink}
-              title="Copy Media Link"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer text-xs flex items-center gap-1"
+              title="Copy Media URL"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+              {copied ? <Check size={16} className="text-emerald-400" /> : <Copy size={16} />}
             </button>
+
             <a
               href={cleanUrl}
               target="_blank"
               rel="noopener noreferrer"
-              title="Open Raw File in New Tab"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+              title="Open Media in New Tab"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
             >
-              <ExternalLink size={14} />
+              <ExternalLink size={16} />
             </a>
+
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer ml-1"
+              title="Close modal"
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer ml-1"
             >
-              <X size={17} />
+              <X size={18} />
             </button>
           </div>
         </div>
@@ -178,7 +178,7 @@ export default function MediaPlayerModal({
                 </audio>
               </div>
             </div>
-          ) : isYouTube || isHls || useFallback ? (
+          ) : (isYouTube || isHls || (useFallback && !isStreamProxy)) ? (
             /* ReactPlayer for YouTube and HLS streams */
             <div className="w-full aspect-video relative flex items-center justify-center bg-black">
               <ReactPlayer
@@ -202,20 +202,29 @@ export default function MediaPlayerModal({
               />
             </div>
           ) : (
-            /* Direct HTML5 Video for MP4/WebM/Cloudinary */
+            /* Direct HTML5 Video for MP4/WebM/Cloudinary/R2 Stream Proxy */
             <div className="w-full aspect-video relative flex items-center justify-center bg-black">
               <video
-                src={cleanUrl}
+                key={cleanUrl}
                 controls
                 autoPlay
                 playsInline
-                preload="metadata"
+                preload="auto"
+                crossOrigin="anonymous"
                 className="w-full h-full max-h-[70vh] rounded-none object-contain bg-black"
-                onError={() => {
-                  console.warn("Native video error, trying ReactPlayer fallback");
-                  setUseFallback(true);
+                onError={(e) => {
+                  console.warn("Native video error on:", cleanUrl, e);
+                  if (!useFallback && !isStreamProxy) {
+                    setUseFallback(true);
+                  } else {
+                    setMediaError("Media stream could not be loaded directly.");
+                  }
                 }}
-              />
+              >
+                <source src={cleanUrl} type="video/mp4" />
+                <source src={cleanUrl.endsWith('.mp4') ? cleanUrl : `${cleanUrl}.mp4`} type="video/mp4" />
+                <source src={cleanUrl} type="video/webm" />
+              </video>
             </div>
           )}
 
