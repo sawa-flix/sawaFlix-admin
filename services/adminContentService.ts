@@ -21,7 +21,7 @@ export interface TopArtist {
 export interface AdminContent {
   id: string;
   artist_id?: string;
-  youtube_url: string;
+  youtube_url?: string;
   title: string;
   thumbnail_url: string;
   author_name: string;
@@ -32,6 +32,8 @@ export interface AdminContent {
   created_at: string;
   published_at?: string;
   source_type?: 'admin' | 'native' | 'cloudflare' | 'upload' | 'youtube' | 'direct' | string;
+  description?: string;
+  media_url?: string;
 }
 
 // Main sawaflix-backend (feed etc.)
