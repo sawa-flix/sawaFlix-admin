@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAdminContentById, AdminContent, deleteAdminContent } from '@/services/adminContentService';
+import { 
+  getAdminContentById, 
+  AdminContent, 
+  deleteAdminContent,
+  getVideoInteractivityStats,
+  getVideoComments,
+  postVideoCommentReply,
+  deleteVideoComment,
+  AdminVideoComment,
+  AdminVideoStats
+} from '@/services/adminContentService';
 import { SawaflixLoader } from '@/components/SawaflixLogo';
 import MediaPlayerModal from '@/components/Common/MediaPlayerModal';
 import { 
@@ -67,6 +77,12 @@ export default function VideoDetailsPage() {
   const [replyText, setReplyText] = useState('');
   const graphContainerRef = useRef<HTMLDivElement>(null);
 
+  // Real Video Interactivity State (Neon PostgreSQL)
+  const [adminStats, setAdminStats] = useState<AdminVideoStats | null>(null);
+  const [adminComments, setAdminComments] = useState<AdminVideoComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
   useEffect(() => {
     async function load() {
       if (!id) return;
@@ -82,6 +98,71 @@ export default function VideoDetailsPage() {
     }
     load();
   }, [id]);
+
+  useEffect(() => {
+    async function loadInteractions() {
+      if (!id) return;
+      setCommentsLoading(true);
+      try {
+        const [statsData, commentsData] = await Promise.all([
+          getVideoInteractivityStats(id),
+          getVideoComments(id, commentFilter === 'top' ? 'top' : 'newest'),
+        ]);
+        if (statsData) setAdminStats(statsData);
+        if (commentsData?.comments) setAdminComments(commentsData.comments);
+      } catch (err) {
+        console.warn("Failed to load video interactions:", err);
+      } finally {
+        setCommentsLoading(false);
+      }
+    }
+    loadInteractions();
+  }, [id, commentFilter]);
+
+  const handleSendReply = async (parentId: string) => {
+    if (!replyText.trim() || !id) return;
+    setReplySubmitting(true);
+    try {
+      const res = await postVideoCommentReply(id, replyText.trim(), parentId);
+      if (res?.comment) {
+        setAdminComments((prev) =>
+          prev.map((c) => {
+            if (c.id === parentId) {
+              const updatedReplies = [...(c.replies || []), res.comment];
+              return {
+                ...c,
+                replies: updatedReplies,
+                repliesCount: updatedReplies.length,
+              };
+            }
+            return c;
+          })
+        );
+        if (adminStats) {
+          setAdminStats({ ...adminStats, commentsCount: adminStats.commentsCount + 1 });
+        }
+      }
+      setReplyOpenId(null);
+      setReplyText('');
+    } catch (err: any) {
+      alert(err.message || 'Failed to post reply');
+    } finally {
+      setReplySubmitting(false);
+    }
+  };
+
+  const handleModerateComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to remove this comment from public discussions?')) return;
+    try {
+      await deleteVideoComment(commentId);
+      setAdminComments((prev) => prev.filter((c) => c.id !== commentId));
+      if (adminStats) {
+        setAdminStats({ ...adminStats, commentsCount: Math.max(0, adminStats.commentsCount - 1) });
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to moderate comment');
+    }
+  };
 
   const handleCopy = (url: string) => {
     navigator.clipboard.writeText(url);
@@ -802,7 +883,9 @@ export default function VideoDetailsPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider">Total Views</span>
                   <Eye size={14} className="text-slate-500" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">1,420</div>
+                <div className="text-2xl font-black text-slate-900">
+                  {adminStats?.viewsCount?.toLocaleString() ?? video.view_count?.toLocaleString() ?? '1,420'}
+                </div>
                 <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 mt-1">
                   <TrendingUp size={11} />
                   <span>+18.4% vs typical</span>
@@ -815,9 +898,11 @@ export default function VideoDetailsPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider">Total Likes</span>
                   <ThumbsUp size={14} className="text-slate-500" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">328</div>
+                <div className="text-2xl font-black text-slate-900">
+                  {adminStats?.likesCount?.toLocaleString() ?? '328'}
+                </div>
                 <div className="text-[10px] text-slate-500 mt-1 font-semibold">
-                  98.4% Like ratio
+                  Live Neon counters
                 </div>
               </div>
 
@@ -827,7 +912,9 @@ export default function VideoDetailsPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider">Comments</span>
                   <MessageSquare size={14} className="text-slate-500" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">42</div>
+                <div className="text-2xl font-black text-slate-900">
+                  {adminStats?.commentsCount ?? adminComments.length}
+                </div>
                 <div className="text-[10px] text-slate-500 mt-1 font-semibold">
                   Active discussion
                 </div>
@@ -839,7 +926,9 @@ export default function VideoDetailsPage() {
                   <span className="text-[10px] font-bold uppercase tracking-wider">Shares</span>
                   <Share2 size={14} className="text-slate-500" />
                 </div>
-                <div className="text-2xl font-black text-slate-900">89</div>
+                <div className="text-2xl font-black text-slate-900">
+                  {adminStats?.sharesCount ?? '0'}
+                </div>
                 <div className="text-[10px] text-emerald-600 mt-1 font-semibold">
                   High viral index
                 </div>
@@ -905,18 +994,18 @@ export default function VideoDetailsPage() {
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                 <MessageSquare size={14} className="text-slate-600" />
-                <span>Community Comments (42)</span>
+                <span>Community Comments ({adminStats?.commentsCount ?? adminComments.length})</span>
               </h3>
               <div className="flex items-center gap-1 text-[11px]">
                 <button 
                   onClick={() => setCommentFilter('all')}
-                  className={`px-2 py-0.5 rounded-md cursor-pointer ${commentFilter === 'all' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-900'}`}
+                  className={`px-2 py-0.5 rounded-md cursor-pointer transition-colors ${commentFilter === 'all' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   All
                 </button>
                 <button 
                   onClick={() => setCommentFilter('top')}
-                  className={`px-2 py-0.5 rounded-md cursor-pointer ${commentFilter === 'top' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-900'}`}
+                  className={`px-2 py-0.5 rounded-md cursor-pointer transition-colors ${commentFilter === 'top' ? 'bg-slate-900 text-white font-bold' : 'text-slate-500 hover:text-slate-900'}`}
                 >
                   Top
                 </button>
@@ -924,76 +1013,116 @@ export default function VideoDetailsPage() {
             </div>
 
             <div className="space-y-3.5 text-xs">
-              {/* Comment 1 */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">
-                      M
+              {commentsLoading ? (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  Loading community comments...
+                </div>
+              ) : adminComments.length === 0 ? (
+                <div className="p-8 text-center rounded-2xl bg-slate-50/50 border border-slate-100 text-slate-400 text-xs">
+                  No community comments yet on this video.
+                </div>
+              ) : (
+                adminComments.map((comment) => (
+                  <div key={comment.id} className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/70 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center overflow-hidden">
+                          {comment.userAvatar ? (
+                            <img src={comment.userAvatar} alt={comment.userName} className="w-full h-full object-cover" />
+                          ) : (
+                            comment.userName?.[0]?.toUpperCase() || 'U'
+                          )}
+                        </div>
+                        <span className="font-bold text-slate-900">{comment.userName}</span>
+                        {comment.userRole && !['viewer', 'user', 'member'].includes(comment.userRole.toLowerCase()) && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 uppercase">
+                            {comment.userRole}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
                     </div>
-                    <span className="font-bold text-slate-900">Michel_B</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      Top Fan
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400">2h ago</span>
-                </div>
-                <p className="text-slate-700 leading-relaxed font-normal">
-                  The visual flow and transitions in this video are super crisp! Loving the culture spotlight.
-                </p>
-                <div className="flex items-center gap-3 text-[10px] text-slate-400 pt-1 font-semibold">
-                  <span className="flex items-center gap-1 text-slate-700"><ThumbsUp size={11} /> 14</span>
-                  <button 
-                    onClick={() => setReplyOpenId(replyOpenId === 'c1' ? null : 'c1')}
-                    className="hover:text-slate-900 transition-colors cursor-pointer"
-                  >
-                    Reply
-                  </button>
-                  <button className="hover:text-rose-600 transition-colors cursor-pointer">Moderate</button>
-                </div>
 
-                {replyOpenId === 'c1' && (
-                  <div className="pt-2 flex items-center gap-2 animate-in fade-in">
-                    <input 
-                      type="text" 
-                      placeholder="Write a creator reply..." 
-                      className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 outline-hidden focus:ring-1 focus:ring-slate-900"
-                    />
-                    <button className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold cursor-pointer">
-                      Send
-                    </button>
-                  </div>
-                )}
-              </div>
+                    <p className="text-slate-700 leading-relaxed font-normal">
+                      {comment.content}
+                    </p>
 
-              {/* Comment 2 */}
-              <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-red-600 text-white font-bold text-[10px] flex items-center justify-center">
-                      C
+                    <div className="flex items-center gap-3 text-[10px] text-slate-400 pt-1 font-semibold">
+                      <span className="flex items-center gap-1 text-slate-700">
+                        <ThumbsUp size={11} /> {comment.likesCount || 0}
+                      </span>
+                      <button 
+                        onClick={() => {
+                          setReplyOpenId(replyOpenId === comment.id ? null : comment.id);
+                          setReplyText('');
+                        }}
+                        className="hover:text-slate-900 transition-colors cursor-pointer"
+                      >
+                        {replyOpenId === comment.id ? 'Cancel' : 'Reply'}
+                      </button>
+                      <button 
+                        onClick={() => handleModerateComment(comment.id)}
+                        className="hover:text-rose-600 transition-colors cursor-pointer"
+                      >
+                        Moderate
+                      </button>
                     </div>
-                    <span className="font-bold text-slate-900">CameroonCulture</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Verified
-                    </span>
+
+                    {/* Creator Inline Reply Box */}
+                    {replyOpenId === comment.id && (
+                      <div className="pt-2 flex items-center gap-2 animate-in fade-in">
+                        <input 
+                          type="text" 
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          placeholder={`Write a creator reply to @${comment.userName}...`} 
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 outline-hidden focus:ring-1 focus:ring-slate-900"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSendReply(comment.id);
+                          }}
+                        />
+                        <button 
+                          onClick={() => handleSendReply(comment.id)}
+                          disabled={replySubmitting || !replyText.trim()}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-xs font-semibold cursor-pointer disabled:opacity-40"
+                        >
+                          {replySubmitting ? 'Sending...' : 'Send'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Nested Replies */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="mt-3 pl-3 border-l-2 border-slate-200 space-y-2.5">
+                        {comment.replies.map((reply) => (
+                          <div key={reply.id} className="pt-1 text-xs space-y-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-slate-800">{reply.userName}</span>
+                                {reply.userRole && !['viewer', 'user'].includes(reply.userRole.toLowerCase()) && (
+                                  <span className="px-1 py-0.2 rounded text-[8px] font-bold bg-slate-100 text-slate-700">
+                                    {reply.userRole}
+                                  </span>
+                                )}
+                              </div>
+                              <button 
+                                onClick={() => handleModerateComment(reply.id)}
+                                className="text-[9px] text-slate-400 hover:text-rose-600 cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                            <p className="text-slate-600 font-normal">{reply.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  <span className="text-[10px] text-slate-400">5h ago</span>
-                </div>
-                <p className="text-slate-700 leading-relaxed font-normal">
-                  Authentic sound and great camera angles. Keep putting out content like this on SawaFlix!
-                </p>
-                <div className="flex items-center gap-3 text-[10px] text-slate-400 pt-1 font-semibold">
-                  <span className="flex items-center gap-1 text-slate-700"><ThumbsUp size={11} /> 22</span>
-                  <button 
-                    onClick={() => setReplyOpenId(replyOpenId === 'c2' ? null : 'c2')}
-                    className="hover:text-slate-900 transition-colors cursor-pointer"
-                  >
-                    Reply
-                  </button>
-                  <button className="hover:text-rose-600 transition-colors cursor-pointer">Moderate</button>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
 

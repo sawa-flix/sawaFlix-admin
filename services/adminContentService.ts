@@ -578,3 +578,84 @@ export async function getAdminContentById(id: string): Promise<AdminContent | nu
 
     return null;
 }
+
+// -------------------------------------------------------------
+// Video Interactivity & Moderation (Neon PostgreSQL Backend)
+// -------------------------------------------------------------
+
+export interface AdminVideoComment {
+  id: string;
+  videoId: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string | null;
+  userRole?: string;
+  content: string;
+  parentId: string | null;
+  isPinned: boolean;
+  createdAt: string;
+  likesCount: number;
+  isLikedByMe: boolean;
+  replies?: AdminVideoComment[];
+  repliesCount?: number;
+}
+
+export interface AdminVideoStats {
+  videoId: string;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  downloadsCount: number;
+  viewsCount: number;
+  isLikedByUser: boolean;
+  interactors?: { id: string; name: string; avatar: string }[];
+}
+
+export async function getVideoInteractivityStats(videoId: string): Promise<AdminVideoStats | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/api/interactions/video/${encodeURIComponent(videoId)}/stats`, { headers });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("getVideoInteractivityStats warning:", err);
+  }
+  return null;
+}
+
+export async function getVideoComments(videoId: string, sort: 'top' | 'newest' = 'top'): Promise<{ comments: AdminVideoComment[]; totalCount: number }> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/api/interactions/video/${encodeURIComponent(videoId)}/comments?sort=${sort}`, { headers });
+    if (res.ok) return await res.json();
+  } catch (err) {
+    console.warn("getVideoComments warning:", err);
+  }
+  return { comments: [], totalCount: 0 };
+}
+
+export async function postVideoCommentReply(videoId: string, content: string, parentId?: string): Promise<any> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/interactions/video/${encodeURIComponent(videoId)}/comments`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ content, parentId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to post reply (${res.status})`);
+  }
+  return await res.json();
+}
+
+export async function deleteVideoComment(commentId: string): Promise<any> {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_URL}/api/interactions/video/comments/${encodeURIComponent(commentId)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Failed to delete comment (${res.status})`);
+  }
+  return await res.json();
+}
