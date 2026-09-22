@@ -7,46 +7,75 @@ import { SawaflixLoader } from '@/components/SawaflixLogo';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { checkAdminRole } from '@/app/actions/auth';
+import { check2FAStatus, signOutAdmin } from '@/services/authService';
+
+/**
+ * AdminLayoutWrapper
+ *
+ * Guards the entire /admin tree with three checks on mount:
+ *   1. Supabase session validity  (getUser — validates JWT with server)
+ *   2. DB role check              (checkAdminRole — bypasses RLS)
+ *   3. Session-bound 2FA status   (check2FAStatus — /api/auth/admin/2fa-status)
+ *
+ * The OTP challenge only exists in the login flow. A stale or unverified
+ * Supabase session is revoked and must pass the complete login flow again.
+ */
 
 const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isVerifying, setIsVerifying] = useState(true);
-    const [authorized, setAuthorized] = useState(false);
+
+    /**
+     * authState:
+     *   'verifying'  — initial; checks running
+     *   'authorized' — all checks passed
+     *   'denied'     — redirecting to login
+     */
+    type AuthState = 'verifying' | 'authorized' | 'denied';
+    const [authState, setAuthState] = useState<AuthState>('verifying');
+
     const router = useRouter();
     const supabase = createClient();
 
     React.useEffect(() => {
         const checkAuth = async () => {
-            // Use getUser() instead of getSession() - it validates the JWT with the server
-            // and is more reliable after a hard redirect (window.location.href)
-            const { data: { user }, error: userError } = await supabase.auth.getUser();
-            console.log("AdminLayoutWrapper: user fetched:", user ? { email: user.email, id: user.id } : null, "error:", userError?.message);
-
+            // ── 1. Session validity ──────────────────────────────────────────
+            const { data: { user } } = await supabase.auth.getUser();
             if (!user) {
-                console.log("AdminLayoutWrapper: No user found, redirecting to /login");
+                setAuthState('denied');
                 router.push('/login');
                 return;
             }
 
-            // Verify admin role via server action to bypass RLS
-            console.log("AdminLayoutWrapper: Verifying admin role for user ID:", user.id);
+            // ── 2. Role check ────────────────────────────────────────────────
             const { role, error } = await checkAdminRole(user.id);
-            console.log("AdminLayoutWrapper: role check response:", { role, error });
 
             if (role !== 'admin') {
-                console.log("AdminLayoutWrapper: Role is not admin (" + role + "), signing out and redirecting");
-                await supabase.auth.signOut();
-                router.push('/login?error=Access+denied.+This+portal+is+restricted+to+administrators+only.');
+                await signOutAdmin();
+                setAuthState('denied');
+                const message = error || 'Access denied. This portal is restricted to administrators only.';
+                router.push(`/login?error=${encodeURIComponent(message)}`);
                 return;
             }
 
-            console.log("AdminLayoutWrapper: Authorized as admin!");
-            setAuthorized(true);
-            setIsVerifying(false);
+            // ── 3. 2FA session status ────────────────────────────────────────
+            const status = await check2FAStatus();
+            if (!status.isVerified) {
+                await signOutAdmin();
+                setAuthState('denied');
+                router.push('/login?error=Your+verified+admin+session+has+expired.+Please+sign+in+again.');
+                return;
+            }
+
+            setAuthState('authorized');
         };
 
-        checkAuth();
-    }, [router, supabase]);
+        checkAuth().catch(async () => {
+            await supabase.auth.signOut();
+            setAuthState('denied');
+            router.push('/login?error=Unable+to+verify+your+admin+session.');
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const toggleSidebar = useCallback(() => {
         setSidebarOpen(prev => !prev);
@@ -56,16 +85,15 @@ const AdminLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
         setSidebarOpen(false);
     }, []);
 
-    if (isVerifying) {
+    if (authState === 'verifying' || authState === 'denied') {
         return (
             <div className="min-h-screen bg-[#F8F9FB] flex items-center justify-center">
-                <SawaflixLoader size={64} text="Verifying Admin Access..." />
+                <SawaflixLoader size={64} text="Verifying Admin Access…" />
             </div>
         );
     }
 
-    if (!authorized) return null;
-
+    // authState === 'authorized'
     return (
         <div className="min-h-screen bg-[#F8F9FB]">
             {/* Header */}

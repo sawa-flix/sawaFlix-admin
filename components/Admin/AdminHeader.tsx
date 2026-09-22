@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, Bell, User, Settings, ChevronDown, Search } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createClient } from '../../utils/supabase/client'; 
+import { createClient } from '../../utils/supabase/client';
+import { signOutAdmin } from '@/services/authService';
 import { User as SupabaseUser } from '@supabase/supabase-js'; 
 import SawaflixLogo from '../SawaflixLogo';
 import { useAdminNotifications } from '../../contexts/AdminNotificationContext';
@@ -48,8 +49,7 @@ const AdminHeader = ({ sidebarOpen, toggleSidebar }: { sidebarOpen: boolean; tog
   }, []);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOutAdmin();
     window.location.href = '/login';
   };
 

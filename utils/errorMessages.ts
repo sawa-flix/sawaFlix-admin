@@ -30,6 +30,13 @@ const ERROR_MAP: { pattern: RegExp; message: string }[] = [
 
   // Admin-specific
   { pattern: /access denied.*admin/i, message: "Access denied. Admin privileges are required to access this portal." },
+
+  // 2FA-specific (pattern-matched on error code strings embedded in messages)
+  { pattern: /ACCOUNT_LOCKED/,  message: "Your account has been locked after too many incorrect attempts. Please wait 15 minutes and try again." },
+  { pattern: /OTP_EXPIRED/,     message: "Your verification code has expired. Please request a new one." },
+  { pattern: /INVALID_OTP/,     message: "Incorrect verification code. Please check the code and try again." },
+  { pattern: /RATE_LIMITED|429|too many.*code/i, message: "Too many code requests. Please wait a moment before requesting a new code." },
+  { pattern: /2FA_REQUIRED/,    message: "Two-factor verification is required. Please complete the security check." },
 ];
 
 export function getFriendlyError(rawError: string | Error | unknown): string {
@@ -48,4 +55,22 @@ export function getFriendlyError(rawError: string | Error | unknown): string {
 
   // If it's already somewhat readable, return it as-is
   return message || "An unexpected error occurred. Please try again.";
+}
+
+// ---------------------------------------------------------------------------
+// 2FA-specific structured error helper
+// ---------------------------------------------------------------------------
+
+import type { TwoFAError } from '@/services/authService';
+
+/**
+ * Returns a user-friendly message for a TwoFAError, with optional
+ * `attemptsRemaining` appended when the backend provides it.
+ */
+export function get2FAFriendlyError(err: TwoFAError): string {
+  const base = getFriendlyError(err.code); // reuse existing pattern map
+  if (err.code === 'INVALID_OTP' && typeof err.attemptsRemaining === 'number') {
+    return `${base} ${err.attemptsRemaining} attempt${err.attemptsRemaining === 1 ? '' : 's'} remaining.`;
+  }
+  return base;
 }

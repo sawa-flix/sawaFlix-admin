@@ -18,7 +18,7 @@ import {
   Settings,
   LogOut,
 } from 'lucide-react';
-import { createClient } from '@/utils/supabase/client';
+import { signOutAdmin } from '@/services/authService';
 
 interface NavItem {
   name: string;
@@ -66,8 +66,7 @@ export default function AdminSidebar({ onNavigate }: { onNavigate?: () => void }
   const pathname = usePathname();
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOutAdmin();
     window.location.href = '/login';
   };
 
