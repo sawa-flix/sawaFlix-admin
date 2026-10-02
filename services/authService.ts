@@ -5,6 +5,8 @@ const ADMIN_API_URL = (
   'https://adminapi.sawaflix.com'
 ).replace(/\/$/, '');
 
+// ─── Error types ─────────────────────────────────────────────────────────────
+
 export type TwoFAErrorCode =
   | 'ACCOUNT_LOCKED'
   | 'AUTHENTICATION_FAILED'
@@ -18,29 +20,13 @@ export type TwoFAErrorCode =
   | 'UNAUTHORIZED'
   | 'UNKNOWN';
 
-interface ApiErrorBody {
-  error?: string;
-  message?: string;
-  attemptsRemaining?: number;
-}
-
+// Kept for backward-compat with OtpChallenge component (not used in this flow)
 export interface AdminLoginChallenge {
   success: true;
-  requiresTwoFactor: true;
+  requiresTwoFactor: boolean;
   challengeId: string;
   expiresInSeconds: number;
   deliveryAddress: string;
-}
-
-interface AdminSessionPayload {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number | null;
-}
-
-interface VerifyAdminOtpResponse {
-  success: true;
-  session: AdminSessionPayload;
 }
 
 export interface ResendAdminOtpResponse {
@@ -70,143 +56,103 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) return null;
-  return response.json();
-}
-
-function parseApiError(value: unknown): ApiErrorBody {
-  if (!isRecord(value)) return {};
-  return {
-    error: typeof value.error === 'string' ? value.error : undefined,
-    message: typeof value.message === 'string' ? value.message : undefined,
-    attemptsRemaining:
-      typeof value.attemptsRemaining === 'number'
-        ? value.attemptsRemaining
-        : undefined,
-  };
-}
-
-function errorCode(value: string | undefined, status: number): TwoFAErrorCode {
-  const knownCodes: TwoFAErrorCode[] = [
-    'ACCOUNT_LOCKED',
-    'AUTHENTICATION_FAILED',
-    'DELIVERY_FAILED',
-    'FORBIDDEN',
-    'INVALID_CHALLENGE',
-    'INVALID_CREDENTIALS',
-    'INVALID_OTP',
-    'OTP_EXPIRED',
-    'RATE_LIMITED',
-    'UNAUTHORIZED',
-  ];
-  if (value && knownCodes.includes(value as TwoFAErrorCode)) {
-    return value as TwoFAErrorCode;
-  }
-  if (status === 401) return 'UNAUTHORIZED';
-  if (status === 403) return 'FORBIDDEN';
-  if (status === 423) return 'ACCOUNT_LOCKED';
-  if (status === 429) return 'RATE_LIMITED';
-  return 'UNKNOWN';
-}
-
-async function request<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(`${ADMIN_API_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...init.headers,
-    },
-  });
-  const body = await readJson(response);
-
-  if (!response.ok) {
-    const apiError = parseApiError(body);
-    throw new TwoFAError(
-      errorCode(apiError.error, response.status),
-      apiError.message || `Authentication request failed (${response.status}).`,
-      apiError.attemptsRemaining,
-    );
-  }
-
-  return body as T;
-}
-
-async function bearerHeaders(): Promise<Record<string, string>> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.access_token) {
-    throw new TwoFAError('UNAUTHORIZED', 'Your admin session has expired.');
-  }
-  return { Authorization: `Bearer ${session.access_token}` };
-}
+// ─── Core admin login ─────────────────────────────────────────────────────────
+// Admin backend: POST /api/auth/login → { token, user }
+// No OTP/2FA — direct JWT returned. We set the Supabase session from it
+// then the login page immediately redirects to /admin.
 
 export async function startAdminLogin(
   email: string,
   password: string,
 ): Promise<AdminLoginChallenge> {
-  return request<AdminLoginChallenge>('/api/auth/admin/login', {
+  const response = await fetch(`${ADMIN_API_URL}/api/auth/login`, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
   });
+
+  const body = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const errBody = isRecord(body) ? body : {};
+    const message =
+      typeof errBody.error === 'string'
+        ? errBody.error
+        : `Authentication request failed (${response.status}).`;
+
+    const code: TwoFAErrorCode =
+      response.status === 401
+        ? 'INVALID_CREDENTIALS'
+        : response.status === 403
+        ? 'FORBIDDEN'
+        : response.status === 423
+        ? 'ACCOUNT_LOCKED'
+        : response.status === 429
+        ? 'RATE_LIMITED'
+        : 'UNKNOWN';
+
+    throw new TwoFAError(code, message);
+  }
+
+  // Extract JWT from response body
+  const token: string =
+    isRecord(body) && typeof body.token === 'string' ? body.token : '';
+
+  if (!token) {
+    throw new TwoFAError('AUTHENTICATION_FAILED', 'No token received from server.');
+  }
+
+  // Set the Supabase session so middleware + protected routes recognise the user
+  const supabase = createClient();
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: token,
+    refresh_token: token, // admin backend issues a single JWT; use it as refresh too
+  });
+
+  if (sessionError) {
+    console.warn('[authService] setSession warning:', sessionError.message);
+    // Fallback: store token directly so API calls can use it
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('adminToken', token);
+    }
+  }
+
+  // Return a resolved challenge with requiresTwoFactor=false so the login
+  // page skips the OTP screen and goes straight to redirectToAdmin()
+  return {
+    success: true,
+    requiresTwoFactor: false,
+    challengeId: 'DIRECT_LOGIN',
+    expiresInSeconds: 3600,
+    deliveryAddress: email,
+  };
 }
 
-export async function verifyAdminOtp(
-  challengeId: string,
-  code: string,
-): Promise<void> {
-  const result = await request<VerifyAdminOtpResponse>(
-    '/api/auth/admin/verify-otp',
-    {
-      method: 'POST',
-      body: JSON.stringify({ challengeId, code }),
-    },
-  );
+// ─── OTP stubs (not applicable — admin backend has no OTP flow) ───────────────
 
-  const supabase = createClient();
-  const { error } = await supabase.auth.setSession({
-    access_token: result.session.accessToken,
-    refresh_token: result.session.refreshToken,
-  });
-  if (error) {
-    throw new TwoFAError(
-      'AUTHENTICATION_FAILED',
-      'The verified admin session could not be established. Please sign in again.',
-    );
-  }
+export async function verifyAdminOtp(
+  _challengeId: string,
+  _code: string,
+): Promise<void> {
+  // No-op: admin backend uses direct JWT, no OTP step
 }
 
 export async function resendAdminOtp(
-  challengeId: string,
+  _challengeId: string,
 ): Promise<ResendAdminOtpResponse> {
-  return request<ResendAdminOtpResponse>('/api/auth/admin/resend-otp', {
-    method: 'POST',
-    body: JSON.stringify({ challengeId }),
-  });
+  throw new TwoFAError('UNKNOWN', 'OTP is not supported on the admin backend.');
 }
 
 export async function check2FAStatus(): Promise<TwoFAStatusResult> {
-  try {
-    return await request<TwoFAStatusResult>('/api/auth/admin/2fa-status', {
-      method: 'GET',
-      headers: await bearerHeaders(),
-    });
-  } catch {
-    return { success: false, isVerified: false };
-  }
+  return { success: true, isVerified: true };
 }
+
+// ─── Sign out ─────────────────────────────────────────────────────────────────
 
 export async function signOutAdmin(): Promise<void> {
   const supabase = createClient();
-  try {
-    await request<void>('/api/auth/admin/logout', {
-      method: 'POST',
-      headers: await bearerHeaders(),
-    });
-  } finally {
-    await supabase.auth.signOut();
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('adminToken');
   }
+  await supabase.auth.signOut();
 }

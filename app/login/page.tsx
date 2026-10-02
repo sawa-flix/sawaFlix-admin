@@ -40,8 +40,16 @@ function LoginContent() {
 
     try {
       const nextChallenge = await startAdminLogin(email, password);
-      setChallenge(nextChallenge);
       setPassword('');
+
+      // Admin backend: no OTP — redirect straight to dashboard
+      if (!nextChallenge.requiresTwoFactor) {
+        redirectToAdmin();
+        return;
+      }
+
+      // Main backend with 2FA: show OTP challenge screen
+      setChallenge(nextChallenge);
       setStep('challenge');
     } catch (loginError) {
       setError(
@@ -53,6 +61,7 @@ function LoginContent() {
       setIsLoading(false);
     }
   };
+
 
   const cancelChallenge = () => {
     setChallenge(null);
