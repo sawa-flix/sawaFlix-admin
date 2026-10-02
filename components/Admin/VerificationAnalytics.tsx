@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, CheckCircle, Users, Activity } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 
-const LIVEURL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https://sawaflix-backend.onrender.com';
+const LIVEURL = process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL || 'https://adminapi.sawaflix.com';
 const supabase = createClient();
 
 // Mini sparkline SVG

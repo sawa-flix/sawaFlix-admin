@@ -2,8 +2,7 @@ import { createClient } from '@/utils/supabase/client';
 
 const ADMIN_API_URL = (
   process.env.NEXT_PUBLIC_ADMIN_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  'https://sawaflix-backend.onrender.com'
+  'https://adminapi.sawaflix.com'
 ).replace(/\/$/, '');
 
 export type TwoFAErrorCode =
