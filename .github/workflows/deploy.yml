@@ -25,7 +25,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Create production .env
         run: |
@@ -59,7 +59,7 @@ jobs:
             git pull origin master
 
             echo "==> Installing dependencies..."
-            npm ci
+            npm install
 
             echo "==> Writing production .env..."
             cat > .env.production.local << 'ENVEOF'
