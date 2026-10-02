@@ -2,15 +2,18 @@ name: Deploy Admin to VPS (admin.sawaflix.com)
 
 on:
   push:
-    branches: [master, main]
+    branches:
+      - master
+      - main
   workflow_dispatch:
 
 env:
   NODE_VERSION: '20'
 
 jobs:
-  deploy:
-    name: Build & Deploy Admin Frontend
+  # ─── Job 1: Build & Verify ───────────────────────────────────────────────────
+  test:
+    name: Build Next.js App
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -43,27 +46,49 @@ jobs:
           NEXT_PUBLIC_SANITY_DATASET=production
           EOF
 
-      - name: Build Next.js app
+      - name: Build
         run: npm run build
 
+  # ─── Job 2: Deploy to VPS ────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
       - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
+          username: sawaflix
           key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT }}
           passphrase: ${{ secrets.VPS_SSH_PASSPHRASE }}
+          port: 22
+          script_stop: true
+
           script: |
             set -e
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            
-            echo "==> Pulling latest code..."
-            cd ~/apps/sawaFlix-admin
-            git pull origin master
 
-            echo "==> Installing dependencies..."
+            # Load NVM
+            export NVM_DIR="/home/sawaflix/.nvm"
+
+            if [ -s "$NVM_DIR/nvm.sh" ]; then
+              . "$NVM_DIR/nvm.sh"
+            fi
+
+            # Use Node 20
+            nvm use 20
+
+            # Go to application
+            cd /home/sawaflix/apps/sawaFlix-admin
+
+            echo "Pulling latest code..."
+
+            git fetch origin master
+            git reset --hard origin/master
+
+            echo "Installing dependencies..."
+
             npm install
 
             echo "==> Writing production .env..."
@@ -81,10 +106,17 @@ jobs:
             NEXT_PUBLIC_SANITY_DATASET=production
             ENVEOF
 
-            echo "==> Building for production..."
+            echo "Building application..."
+
             npm run build
 
-            echo "==> Restarting PM2 process..."
-            pm2 reload sawaflix-admin --update-env || pm2 start npm --name sawaflix-admin -- start
+            echo "Reloading PM2..."
 
-            echo "==> Deploy complete!"
+            pm2 reload sawaflix-admin --update-env 2>/dev/null || \
+              pm2 start npm --name sawaflix-admin -- start
+
+            pm2 save
+
+            echo "======================================"
+            echo "✅ Deployment successful!"
+            echo "======================================"
