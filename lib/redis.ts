@@ -5,7 +5,7 @@ export const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL!,
     token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
-
+//that is cool
 // General rate limiter (kept for backwards compatibility)
 export const rateLimit = new Ratelimit({
     redis: redis,
