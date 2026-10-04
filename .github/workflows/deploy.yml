@@ -89,20 +89,18 @@ jobs:
             npm install
 
             echo "==> Writing production .env..."
-            cat > .env.production.local << 'ENVEOF'
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-            SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-            YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}
-            NEXT_PUBLIC_API_URL=https://api.sawaflix.com
-            NEXT_PUBLIC_BACKEND_URL=https://api.sawaflix.com
-            NEXT_PUBLIC_ADMIN_BACKEND_URL=https://adminapi.sawaflix.com
-            UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}
-            UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-            NEXT_PUBLIC_SITE_URL=https://admin.sawaflix.com
-            NEXT_PUBLIC_SANITY_PROJECT_ID=${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
-            NEXT_PUBLIC_SANITY_DATASET=production
-            ENVEOF
+            echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" > .env.production.local
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> .env.production.local
+            echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> .env.production.local
+            echo "YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}" >> .env.production.local
+            echo "NEXT_PUBLIC_API_URL=https://api.sawaflix.com" >> .env.production.local
+            echo "NEXT_PUBLIC_BACKEND_URL=https://api.sawaflix.com" >> .env.production.local
+            echo "NEXT_PUBLIC_ADMIN_BACKEND_URL=https://adminapi.sawaflix.com" >> .env.production.local
+            echo "UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}" >> .env.production.local
+            echo "UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}" >> .env.production.local
+            echo "NEXT_PUBLIC_SITE_URL=https://admin.sawaflix.com" >> .env.production.local
+            echo "NEXT_PUBLIC_SANITY_PROJECT_ID=${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}" >> .env.production.local
+            echo "NEXT_PUBLIC_SANITY_DATASET=production" >> .env.production.local
 
             echo "Building application..."
 
