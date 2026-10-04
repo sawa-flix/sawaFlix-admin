@@ -30,24 +30,20 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create production .env
-        run: |
-          cat > .env.production << EOF
-          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          YOUTUBE_API_KEY=${{ secrets.YOUTUBE_API_KEY }}
-          NEXT_PUBLIC_API_URL=https://api.sawaflix.com
-          NEXT_PUBLIC_BACKEND_URL=https://api.sawaflix.com
-          NEXT_PUBLIC_ADMIN_BACKEND_URL=https://adminapi.sawaflix.com
-          UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}
-          UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-          NEXT_PUBLIC_SITE_URL=https://admin.sawaflix.com
-          NEXT_PUBLIC_SANITY_PROJECT_ID=${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
-          NEXT_PUBLIC_SANITY_DATASET=production
-          EOF
-
       - name: Build
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          NEXT_PUBLIC_API_URL: 'https://api.sawaflix.com'
+          NEXT_PUBLIC_BACKEND_URL: 'https://api.sawaflix.com'
+          NEXT_PUBLIC_ADMIN_BACKEND_URL: 'https://adminapi.sawaflix.com'
+          UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          NEXT_PUBLIC_SITE_URL: 'https://admin.sawaflix.com'
+          NEXT_PUBLIC_SANITY_PROJECT_ID: 'uwippvm9'
+          NEXT_PUBLIC_SANITY_DATASET: 'production'
 
   # ─── Job 2: Deploy to VPS ────────────────────────────────────────────────────
   deploy:
