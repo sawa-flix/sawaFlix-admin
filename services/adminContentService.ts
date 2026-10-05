@@ -402,7 +402,10 @@ export async function presignAdminUpload(filename: string, contentType: string) 
         throw new Error(`Failed to generate presigned URL (Status: ${res.status})`);
     }
 
-    return res.json();
+    // Backend responds { success, data: { presignedUrl, videoId, objectKey } }
+    const json = await res.json();
+    const d = json.data || json;
+    return { ...d, uploadUrl: d.uploadUrl || d.presignedUrl } as { videoId: string; uploadUrl: string; presignedUrl: string; objectKey: string };
 }
 
 export async function confirmAdminUpload(videoId: string, metadata: any) {

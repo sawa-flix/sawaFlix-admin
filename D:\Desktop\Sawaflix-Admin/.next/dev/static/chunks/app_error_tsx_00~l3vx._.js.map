@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///run/media/mazwewoh/DE4ACCA04ACC7735/Desktop/Sawaflix-Admin/app/error.tsx"],"sourcesContent":["'use client';\n\nimport React from 'react';\n\nexport default function Error({\n  error,\n  reset,\n}: {\n  error: Error & { digest?: string };\n  reset: () => void;\n}) {\n  return (\n    <div className=\"min-h-screen flex items-center justify-center bg-gray-900\">\n      <div className=\"text-center p-8 bg-gray-800 rounded-xl\">\n        <h2 className=\"text-2xl font-bold text-red-500 mb-4\">Something went wrong!</h2>\n        <p className=\"text-gray-300 mb-4\">{error.message}</p>\n        <button\n          onClick={() => reset()}\n          className=\"px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700\"\n        >\n          Try again\n        </button>\n      </div>\n    </div>\n  );\n}\n"],"names":["Error","error","reset","className","message","onClick"],"mappings":";;;;;AAAA;;AAIe,SAASA,MAAM,EAC5BC,KAAK,EACLC,KAAK,EAIN;IACC,qBACE,6LAAC;QAAIC,WAAU;kBACb,cAAA,6LAAC;YAAIA,WAAU;;8BACb,6LAAC;oBAAGA,WAAU;8BAAuC;;;;;;8BACrD,6LAAC;oBAAEA,WAAU;8BAAsBF,MAAMG,OAAO;;;;;;8BAChD,6LAAC;oBACCC,SAAS,IAAMH;oBACfC,WAAU;8BACX;;;;;;;;;;;;;;;;;AAMT;KArBwBH"}}]
-}

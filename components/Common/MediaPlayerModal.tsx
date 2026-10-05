@@ -45,17 +45,11 @@ export default function MediaPlayerModal({
         'sawaflix-videos.86d2d5e51bf3a4757402848d183da2ea.r2.cloudflarestorage.com'
       );
     }
-    // Only fallback if the URL is completely broken (empty access key or raw S3 endpoint without signature)
-    const isBrokenR2 = sanitized.includes('X-Amz-Credential=%2F') || 
-      (sanitized.includes('r2.cloudflarestorage.com') && !sanitized.includes('X-Amz-Signature'));
-
-    if (isBrokenR2) {
-      return isAudio 
-        ? 'https://res.cloudinary.com/dblemcuu2/video/upload/v1778633372/sawaflix/creators/b21d3e41-f405-46bc-b144-319669ec3e0d/audios/standard/media/tjyrh9zeadnpawvdq4lm.mp3'
-        : 'https://res.cloudinary.com/dblemcuu2/video/upload/v1777685592/sawaflix/creators/e154872b-15b3-4f0b-a2d7-c7be69db46dd/videos/standard/media/tzohqy3ainvu1zpjvneh.mp4';
-    }
+    // NOTE: we deliberately do NOT swap broken URLs for a hard-coded demo video any more –
+    // that made the wrong video play and hid the real problem. Backend now returns a
+    // permanent /api/admin/upload/stream/<id> link (or the original Cloudinary/YouTube URL).
     return sanitized;
-  }, [url, isAudio]);
+  }, [url]);
 
   const isYouTube = cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
   const isHls = cleanUrl.includes('.m3u8');
@@ -210,7 +204,6 @@ export default function MediaPlayerModal({
                 autoPlay
                 playsInline
                 preload="auto"
-                crossOrigin="anonymous"
                 className="w-full h-full max-h-[70vh] rounded-none object-contain bg-black"
                 onError={(e) => {
                   console.warn("Native video error on:", cleanUrl, e);
